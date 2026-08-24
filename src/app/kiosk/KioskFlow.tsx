@@ -34,7 +34,8 @@ export function KioskFlow({ filialeId, filialeName }: { filialeId: string; filia
   const [checking, setChecking] = useState(false);
 
   const [articleQuery, setArticleQuery] = useState("");
-  const [articleResults, setArticleResults] = useState<ArticleResult[]>([]);
+  const [articleResultsRaw, setArticleResults] = useState<ArticleResult[]>([]);
+  const articleResults = articleQuery.trim().length >= 2 ? articleResultsRaw : [];
   const [freeTextWish, setFreeTextWish] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
 
@@ -44,10 +45,7 @@ export function KioskFlow({ filialeId, filialeName }: { filialeId: string; filia
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (articleQuery.trim().length < 2) {
-      setArticleResults([]);
-      return;
-    }
+    if (articleQuery.trim().length < 2) return;
     const timeout = setTimeout(async () => {
       const res = await fetch(`/api/kiosk/articles?q=${encodeURIComponent(articleQuery)}`);
       const data = await res.json();
@@ -60,7 +58,6 @@ export function KioskFlow({ filialeId, filialeName }: { filialeId: string; filia
     if (step !== "done") return;
     const timeout = setTimeout(() => resetAll(), 15000);
     return () => clearTimeout(timeout);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
   function resetAll() {

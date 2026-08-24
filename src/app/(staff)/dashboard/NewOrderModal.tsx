@@ -22,23 +22,22 @@ export function NewOrderModal({
 }) {
   const [filialeId, setFilialeId] = useState(defaultFilialeId ?? filialen[0]?.id ?? "");
   const [customerQuery, setCustomerQuery] = useState("");
-  const [customerResults, setCustomerResults] = useState<CustomerListItem[]>([]);
+  const [customerResultsRaw, setCustomerResults] = useState<CustomerListItem[]>([]);
+  const customerResults = customerQuery.trim().length >= 2 ? customerResultsRaw : [];
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerListItem | null>(null);
   const [showNewCustomerForm, setShowNewCustomerForm] = useState(false);
   const [newCustomer, setNewCustomer] = useState({ firstName: "", lastName: "", email: "", phone: "" });
 
   const [articleQuery, setArticleQuery] = useState("");
-  const [articleResults, setArticleResults] = useState<ArticleListItem[]>([]);
+  const [articleResultsRaw, setArticleResults] = useState<ArticleListItem[]>([]);
+  const articleResults = articleQuery.trim().length >= 2 ? articleResultsRaw : [];
   const [items, setItems] = useState<DraftItem[]>([]);
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    if (customerQuery.trim().length < 2) {
-      setCustomerResults([]);
-      return;
-    }
+    if (customerQuery.trim().length < 2) return;
     const timeout = setTimeout(async () => {
       const res = await fetch(`/api/customers?q=${encodeURIComponent(customerQuery)}`);
       const data = await res.json();
@@ -48,10 +47,7 @@ export function NewOrderModal({
   }, [customerQuery]);
 
   useEffect(() => {
-    if (articleQuery.trim().length < 2) {
-      setArticleResults([]);
-      return;
-    }
+    if (articleQuery.trim().length < 2) return;
     const timeout = setTimeout(async () => {
       const res = await fetch(`/api/articles?q=${encodeURIComponent(articleQuery)}`);
       const data = await res.json();
