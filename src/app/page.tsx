@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 
+// Reads the Filiale list live on every request; without this Next.js would
+// statically freeze the homepage at build time, so a branch added later via
+// Settings would never appear here until the next deploy.
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const filialen = await prisma.filiale.findMany({ orderBy: { name: "asc" } });
 

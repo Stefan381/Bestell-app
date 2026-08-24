@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "postinstall": "prisma generate",
     "db:seed": "prisma db seed",
     "db:migrate": "prisma migrate dev"
   },
