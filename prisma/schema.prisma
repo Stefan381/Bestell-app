@@ -1,0 +1,189 @@
+// Prisma schema for the City Kauf Kundenbestellportal
+// Docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum CustomerSource {
+  KASSE
+  HUBSPOT
+  MANUAL
+}
+
+enum OrderStatus {
+  OFFEN
+  BESTELLT
+  GELIEFERT
+}
+
+enum NotificationChannel {
+  EMAIL
+  WHATSAPP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum ImportType {
+  CUSTOMER_KASSE
+  CUSTOMER_HUBSPOT
+  ARTICLE
+}
+
+model Filiale {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  address   String?
+  createdAt DateTime @default(now())
+
+  users  User[]
+  orders Order[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  isActive     Boolean  @default(true)
+  filialeId    String?
+  filiale      Filiale? @relation(fields: [filialeId], references: [id])
+  createdAt    DateTime @default(now())
+
+  ordersCreated  Order[] @relation("OrderCreatedBy")
+  ordersOrdered  Order[] @relation("OrderOrderedBy")
+  ordersDelivered Order[] @relation("OrderDeliveredBy")
+  importBatches  ImportBatch[]
+}
+
+model Customer {
+  id            String         @id @default(cuid())
+  firstName     String
+  lastName      String
+  email         String?
+  phone         String?
+  source        CustomerSource @default(MANUAL)
+  externalRef   String?
+  gdprConsent   Boolean        @default(false)
+  gdprConsentAt DateTime?
+  notes         String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+
+  orders Order[]
+
+  @@index([email])
+  @@index([phone])
+  @@index([lastName, firstName])
+}
+
+model Article {
+  id            String   @id @default(cuid())
+  articleNumber String   @unique
+  name          String
+  price         Decimal  @db.Decimal(10, 2)
+  ean           String?
+  category      String?
+  stock         Int?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  orderItems OrderItem[]
+
+  @@index([name])
+  @@index([ean])
+}
+
+model Order {
+  id         String      @id @default(cuid())
+  customerId String
+  customer   Customer    @relation(fields: [customerId], references: [id])
+  filialeId  String
+  filiale    Filiale     @relation(fields: [filialeId], references: [id])
+  status     OrderStatus @default(OFFEN)
+  note       String?
+
+  createdAt       DateTime @default(now())
+  createdByUserId String?
+  createdByUser   User?    @relation("OrderCreatedBy", fields: [createdByUserId], references: [id])
+
+  orderedAt       DateTime?
+  orderedByUserId String?
+  orderedByUser   User?     @relation("OrderOrderedBy", fields: [orderedByUserId], references: [id])
+
+  deliveredAt       DateTime?
+  deliveredByUserId String?
+  deliveredByUser   User?     @relation("OrderDeliveredBy", fields: [deliveredByUserId], references: [id])
+
+  items         OrderItem[]
+  notifications Notification[]
+
+  @@index([status])
+  @@index([filialeId])
+  @@index([customerId])
+}
+
+model OrderItem {
+  id            String   @id @default(cuid())
+  orderId       String
+  order         Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  articleId     String?
+  article       Article? @relation(fields: [articleId], references: [id])
+  freeTextWish  String?
+  quantity      Int      @default(1)
+
+  @@index([orderId])
+  @@index([articleId])
+}
+
+model MessageTemplate {
+  id        String               @id @default(cuid())
+  name      String
+  channel   NotificationChannel
+  subject   String?
+  body      String
+  isDefault Boolean              @default(false)
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
+  notifications Notification[]
+}
+
+model Notification {
+  id            String              @id @default(cuid())
+  orderId       String
+  order         Order               @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  channel       NotificationChannel
+  status        NotificationStatus  @default(PENDING)
+  recipient     String
+  templateId    String?
+  template      MessageTemplate?    @relation(fields: [templateId], references: [id])
+  renderedBody  String
+  errorMessage  String?
+  sentAt        DateTime?
+  createdAt     DateTime            @default(now())
+
+  @@index([orderId])
+}
+
+model ImportBatch {
+  id                  String     @id @default(cuid())
+  type                ImportType
+  fileName            String
+  importedAt          DateTime   @default(now())
+  importedByUserId    String
+  importedByUser      User       @relation(fields: [importedByUserId], references: [id])
+  rowsTotal           Int
+  rowsCreated         Int
+  rowsUpdated         Int
+  rowsSkippedDuplicate Int
+}
