@@ -15,6 +15,21 @@ export type ArticleListItem = Prisma.ArticleGetPayload<{
 
 export type FilialeItem = Prisma.FilialeGetPayload<Record<string, never>>;
 
+export type ArticleDetail = Prisma.ArticleGetPayload<{
+  include: {
+    orderItems: { include: { order: { include: { customer: true } } } };
+    _count: { select: { orderItems: true } };
+  };
+}>;
+
+export type CustomerDetail = Prisma.CustomerGetPayload<{
+  include: {
+    orders: {
+      include: { items: { include: { article: true } }; filiale: true };
+    };
+  };
+}>;
+
 export type StaffUserListItem = {
   id: string;
   name: string;
