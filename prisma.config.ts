@@ -10,6 +10,12 @@ export default defineConfig({
     seed: "tsx prisma/seed.ts",
   },
   datasource: {
-    url: process.env["DATABASE_URL"],
+    // Prisma CLI commands (migrate deploy, etc.) need a direct connection to
+    // take a Postgres advisory lock; Neon's pooled DATABASE_URL (PgBouncer)
+    // doesn't support that and times out with P1002. The app itself keeps
+    // using the pooled DATABASE_URL (see src/lib/prisma.ts) - only the CLI
+    // needs the unpooled one. Falls back to DATABASE_URL for plain Postgres
+    // setups (e.g. local dev) that don't have a separate unpooled URL.
+    url: process.env["DATABASE_URL_UNPOOLED"] ?? process.env["DATABASE_URL"],
   },
 });
