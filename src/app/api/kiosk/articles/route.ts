@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import { toPlainArticle } from "@/lib/apiSerialize";
 
 // Public (kiosk, no login): product catalog search, not personal data.
 export async function GET(request: Request) {
@@ -22,5 +23,5 @@ export async function GET(request: Request) {
     take: 20,
   });
 
-  return NextResponse.json({ articles });
+  return NextResponse.json({ articles: articles.map(toPlainArticle) });
 }

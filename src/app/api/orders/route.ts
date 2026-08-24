@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireStaffSession } from "@/lib/auth/apiAuth";
 import type { Prisma } from "@/generated/prisma/client";
 import { orderStaffInclude } from "@/lib/orderInclude";
+import { toPlainOrder } from "@/lib/apiSerialize";
 
 export async function GET(request: Request) {
   const auth = await requireStaffSession();
@@ -56,7 +57,7 @@ export async function GET(request: Request) {
     take: 300,
   });
 
-  return NextResponse.json({ orders });
+  return NextResponse.json({ orders: orders.map(toPlainOrder) });
 }
 
 const orderItemSchema = z.object({
@@ -108,5 +109,5 @@ export async function POST(request: Request) {
     include: { items: { include: { article: true } }, customer: true, filiale: true },
   });
 
-  return NextResponse.json({ order }, { status: 201 });
+  return NextResponse.json({ order: toPlainOrder(order) }, { status: 201 });
 }

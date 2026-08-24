@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireStaffSession } from "@/lib/auth/apiAuth";
+import { toPlainArticle } from "@/lib/apiSerialize";
 
 export async function GET(request: Request) {
   const auth = await requireStaffSession();
@@ -25,7 +26,7 @@ export async function GET(request: Request) {
     include: { _count: { select: { orderItems: true } } },
   });
 
-  return NextResponse.json({ articles });
+  return NextResponse.json({ articles: articles.map(toPlainArticle) });
 }
 
 const createArticleSchema = z.object({
@@ -64,5 +65,5 @@ export async function POST(request: Request) {
     },
   });
 
-  return NextResponse.json({ article }, { status: 201 });
+  return NextResponse.json({ article: toPlainArticle(article) }, { status: 201 });
 }

@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { requireStaffSession } from "@/lib/auth/apiAuth";
 import { sendOrderReadyNotification } from "@/lib/notifications";
 import { orderStaffInclude } from "@/lib/orderInclude";
+import { toPlainOrder } from "@/lib/apiSerialize";
 
 export async function GET(_request: Request, ctx: RouteContext<"/api/orders/[id]">) {
   const auth = await requireStaffSession();
@@ -19,7 +20,7 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/orders/[id]
   });
 
   if (!order) return NextResponse.json({ error: "Bestellung nicht gefunden." }, { status: 404 });
-  return NextResponse.json({ order });
+  return NextResponse.json({ order: toPlainOrder(order) });
 }
 
 const updateOrderSchema = z.object({
@@ -72,5 +73,5 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/orders/[id
     include: { ...orderStaffInclude, notifications: { orderBy: { createdAt: "desc" }, take: 1 } },
   });
 
-  return NextResponse.json({ order });
+  return NextResponse.json({ order: toPlainOrder(order) });
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireStaffSession } from "@/lib/auth/apiAuth";
+import { toPlainArticle } from "@/lib/apiSerialize";
 
 export async function GET(_request: Request, ctx: RouteContext<"/api/articles/[id]">) {
   const auth = await requireStaffSession();
@@ -24,7 +25,7 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/articles/[i
     return NextResponse.json({ error: "Artikel nicht gefunden." }, { status: 404 });
   }
 
-  return NextResponse.json({ article });
+  return NextResponse.json({ article: toPlainArticle(article) });
 }
 
 const updateArticleSchema = z.object({
@@ -63,7 +64,7 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/articles/[
     },
   });
 
-  return NextResponse.json({ article });
+  return NextResponse.json({ article: toPlainArticle(article) });
 }
 
 export async function DELETE(_request: Request, ctx: RouteContext<"/api/articles/[id]">) {
