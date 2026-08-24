@@ -45,7 +45,7 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/orders/[id
   const statusChangingToDelivered = data.status === "GELIEFERT" && existing.status !== "GELIEFERT";
   const now = new Date();
 
-  const order = await prisma.order.update({
+  await prisma.order.update({
     where: { id },
     data: {
       ...(data.note !== undefined && { note: data.note || null }),
@@ -59,12 +59,18 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/orders/[id
         deliveredByUserId: auth.session.userId,
       }),
     },
-    include: orderStaffInclude,
   });
 
   if (statusChangingToDelivered) {
     await sendOrderReadyNotification(id, "EMAIL");
   }
+
+  // Re-fetch so the response always carries the latest notification (if one
+  // was just sent above) — a single include shape shared with GET/list.
+  const order = await prisma.order.findUniqueOrThrow({
+    where: { id },
+    include: { ...orderStaffInclude, notifications: { orderBy: { createdAt: "desc" }, take: 1 } },
+  });
 
   return NextResponse.json({ order });
 }
