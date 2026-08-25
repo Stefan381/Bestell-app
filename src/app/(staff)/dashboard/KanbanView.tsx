@@ -39,18 +39,37 @@ function TrashDropZone() {
   );
 }
 
+/** Orders arrive sorted newest-created-first, which is what Offen/Bestellt
+ * want. Geliefert should instead show whoever was most recently marked
+ * delivered at the top - that's the meaningful "newest" once an order sits
+ * in that column. */
+function sortForColumn(
+  status: (typeof STATUS_ORDER)[number],
+  orders: SerializedOrder[]
+): SerializedOrder[] {
+  if (status !== "GELIEFERT") return orders;
+  return [...orders].sort((a, b) => {
+    const aTime = new Date(a.deliveredAt ?? a.createdAt).getTime();
+    const bTime = new Date(b.deliveredAt ?? b.createdAt).getTime();
+    return bTime - aTime;
+  });
+}
+
 function Column({
   status,
   orders,
   onStatusChange,
   onNotified,
+  onUpdated,
 }: {
   status: (typeof STATUS_ORDER)[number];
   orders: SerializedOrder[];
   onStatusChange: (orderId: string, status: (typeof STATUS_ORDER)[number]) => void;
   onNotified: () => void;
+  onUpdated: () => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
+  const sortedOrders = sortForColumn(status, orders);
 
   return (
     <div
@@ -65,8 +84,14 @@ function Column({
           {orders.length}
         </span>
       </div>
-      {orders.map((order) => (
-        <OrderCard key={order.id} order={order} onStatusChange={onStatusChange} onNotified={onNotified} />
+      {sortedOrders.map((order) => (
+        <OrderCard
+          key={order.id}
+          order={order}
+          onStatusChange={onStatusChange}
+          onNotified={onNotified}
+          onUpdated={onUpdated}
+        />
       ))}
       {orders.length === 0 && (
         <p className="px-1 py-6 text-center text-xs text-foreground/40">Keine Bestellungen</p>
@@ -79,11 +104,13 @@ export function KanbanView({
   orders,
   onStatusChange,
   onNotified,
+  onUpdated,
   onDelete,
 }: {
   orders: SerializedOrder[];
   onStatusChange: (orderId: string, status: (typeof STATUS_ORDER)[number]) => void;
   onNotified: () => void;
+  onUpdated: () => void;
   onDelete: (orderId: string) => void;
 }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
@@ -112,6 +139,7 @@ export function KanbanView({
             orders={orders.filter((o) => o.status === status)}
             onStatusChange={onStatusChange}
             onNotified={onNotified}
+            onUpdated={onUpdated}
           />
         ))}
       </div>

@@ -174,6 +174,7 @@ export function DashboardBoard({
             orders={orders}
             onStatusChange={handleStatusChange}
             onNotified={() => refetch(filters)}
+            onUpdated={() => refetch(filters)}
             onDelete={handleDelete}
           />
         ) : (
