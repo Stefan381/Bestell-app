@@ -19,6 +19,19 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/orders/[id]
   return NextResponse.json({ order: toPlainOrder(order) });
 }
 
+export async function DELETE(_request: Request, ctx: RouteContext<"/api/orders/[id]">) {
+  const auth = await requireStaffSession();
+  if (!auth.session) return auth.response;
+
+  const { id } = await ctx.params;
+  const existing = await prisma.order.findUnique({ where: { id } });
+  if (!existing) return NextResponse.json({ error: "Bestellung nicht gefunden." }, { status: 404 });
+
+  // OrderItem and Notification both cascade-delete with the order.
+  await prisma.order.delete({ where: { id } });
+  return NextResponse.json({ ok: true });
+}
+
 const updateOrderSchema = z.object({
   status: z.enum(["OFFEN", "BESTELLT", "GELIEFERT"]).optional(),
   note: z.string().trim().optional(),

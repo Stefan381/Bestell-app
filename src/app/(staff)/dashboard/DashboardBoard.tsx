@@ -72,6 +72,19 @@ export function DashboardBoard({
     }
   }
 
+  async function handleDelete(orderId: string) {
+    const order = orders.find((o) => o.id === orderId);
+    const label = order ? `${order.customer.firstName} ${order.customer.lastName}` : "diese Bestellung";
+    if (!confirm(`Bestellung von ${label} wirklich unwiderruflich löschen?`)) return;
+
+    const res = await fetch(`/api/orders/${orderId}`, { method: "DELETE" });
+    if (res.ok) {
+      setOrders((prev) => prev.filter((o) => o.id !== orderId));
+    } else {
+      alert("Bestellung konnte nicht gelöscht werden.");
+    }
+  }
+
   return (
     <div className="mt-4">
       <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border bg-surface p-3">
@@ -157,7 +170,12 @@ export function DashboardBoard({
 
       <div className={`mt-4 ${loading ? "opacity-50" : ""}`}>
         {view === "kanban" ? (
-          <KanbanView orders={orders} onStatusChange={handleStatusChange} onNotified={() => refetch(filters)} />
+          <KanbanView
+            orders={orders}
+            onStatusChange={handleStatusChange}
+            onNotified={() => refetch(filters)}
+            onDelete={handleDelete}
+          />
         ) : (
           <TableView orders={orders} />
         )}
