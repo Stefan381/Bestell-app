@@ -22,6 +22,14 @@ enum OrderStatus {
   GELIEFERT
 }
 
+enum Department {
+  SPIELWAREN
+  SCHREIBWAREN
+  HAUSHALT
+  SCHULRANZEN
+  SCHULBUECHER
+}
+
 enum NotificationChannel {
   EMAIL
   WHATSAPP
@@ -111,6 +119,9 @@ model Order {
   filialeId  String
   filiale    Filiale     @relation(fields: [filialeId], references: [id])
   status     OrderStatus @default(OFFEN)
+  // Nullable: only set by the staff "Neue Bestellung" form. Kiosk orders
+  // don't ask the customer for this, so stay null there.
+  department Department?
   note       String?
 
   createdAt       DateTime @default(now())
@@ -131,6 +142,7 @@ model Order {
   @@index([status])
   @@index([filialeId])
   @@index([customerId])
+  @@index([department])
 }
 
 model OrderItem {

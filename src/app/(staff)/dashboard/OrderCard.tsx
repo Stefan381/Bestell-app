@@ -44,10 +44,16 @@ async function openNotifyWindow(orderId: string, channel: NotifyChannel): Promis
   }
 
   if (channel === "EMAIL") {
-    const params = new URLSearchParams();
-    if (data.subject) params.set("subject", data.subject);
-    params.set("body", data.body);
-    window.location.href = `mailto:${encodeURIComponent(data.recipient)}?${params.toString()}`;
+    // Not URLSearchParams: it form-encodes spaces as "+", which mailto:
+    // clients (Outlook in particular) show literally instead of decoding -
+    // mailto: needs plain percent-encoding (encodeURIComponent -> %20).
+    const params = [
+      data.subject ? `subject=${encodeURIComponent(data.subject)}` : null,
+      `body=${encodeURIComponent(data.body)}`,
+    ]
+      .filter(Boolean)
+      .join("&");
+    window.location.href = `mailto:${encodeURIComponent(data.recipient)}?${params}`;
   } else {
     const waUrl = `https://wa.me/${data.recipient}?text=${encodeURIComponent(data.body)}`;
     if (pendingWindow) pendingWindow.location.href = waUrl;

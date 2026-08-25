@@ -7,16 +7,18 @@ import { KanbanView } from "./KanbanView";
 import { TableView } from "./TableView";
 import { NewOrderModal } from "./NewOrderModal";
 import type { STATUS_ORDER } from "./OrderCard";
+import { DEPARTMENTS, DEPARTMENT_LABELS } from "@/lib/departments";
 
 interface Filters {
   q: string;
   filialeId: string;
+  department: string;
   employeeId: string;
   from: string;
   to: string;
 }
 
-const EMPTY_FILTERS: Filters = { q: "", filialeId: "", employeeId: "", from: "", to: "" };
+const EMPTY_FILTERS: Filters = { q: "", filialeId: "", department: "", employeeId: "", from: "", to: "" };
 
 export function DashboardBoard({
   initialOrders,
@@ -38,6 +40,7 @@ export function DashboardBoard({
     const params = new URLSearchParams();
     if (nextFilters.q) params.set("q", nextFilters.q);
     if (nextFilters.filialeId) params.set("filialeId", nextFilters.filialeId);
+    if (nextFilters.department) params.set("department", nextFilters.department);
     if (nextFilters.employeeId) params.set("employeeId", nextFilters.employeeId);
     if (nextFilters.from) params.set("from", nextFilters.from);
     if (nextFilters.to) params.set("to", nextFilters.to);
@@ -87,6 +90,18 @@ export function DashboardBoard({
           {filialen.map((f) => (
             <option key={f.id} value={f.id}>
               {f.name}
+            </option>
+          ))}
+        </select>
+        <select
+          value={filters.department}
+          onChange={(e) => updateFilter({ department: e.target.value })}
+          className="rounded-lg border border-border px-2 py-1.5 text-sm"
+        >
+          <option value="">Alle Abteilungen</option>
+          {DEPARTMENTS.map((d) => (
+            <option key={d} value={d}>
+              {DEPARTMENT_LABELS[d]}
             </option>
           ))}
         </select>

@@ -5,6 +5,7 @@ import { requireStaffSession } from "@/lib/auth/apiAuth";
 import type { Prisma } from "@/generated/prisma/client";
 import { orderNotificationsInclude, orderStaffInclude } from "@/lib/orderInclude";
 import { toPlainOrder } from "@/lib/apiSerialize";
+import { DEPARTMENTS } from "@/lib/departments";
 
 export async function GET(request: Request) {
   const auth = await requireStaffSession();
@@ -13,6 +14,7 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status");
   const filialeId = searchParams.get("filialeId");
+  const department = searchParams.get("department");
   const employeeId = searchParams.get("employeeId");
   const from = searchParams.get("from");
   const to = searchParams.get("to");
@@ -21,6 +23,7 @@ export async function GET(request: Request) {
   const where: Prisma.OrderWhereInput = {};
   if (status) where.status = status as Prisma.OrderWhereInput["status"];
   if (filialeId) where.filialeId = filialeId;
+  if (department) where.department = department as Prisma.OrderWhereInput["department"];
   if (employeeId) {
     where.OR = [
       { createdByUserId: employeeId },
@@ -69,6 +72,7 @@ const orderItemSchema = z.object({
 const createOrderSchema = z.object({
   customerId: z.string(),
   filialeId: z.string(),
+  department: z.enum(DEPARTMENTS),
   note: z.string().trim().optional(),
   items: z.array(orderItemSchema).min(1),
 });
@@ -95,6 +99,7 @@ export async function POST(request: Request) {
     data: {
       customerId: data.customerId,
       filialeId: data.filialeId,
+      department: data.department,
       note: data.note || null,
       status: "OFFEN",
       createdByUserId: auth.session.userId,

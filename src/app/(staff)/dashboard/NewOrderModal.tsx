@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import type { ArticleListItem, CustomerListItem, FilialeItem } from "@/lib/types";
+import { DEPARTMENTS, DEPARTMENT_LABELS, type Department } from "@/lib/departments";
 
 interface DraftItem {
   articleId: string;
@@ -21,6 +22,7 @@ export function NewOrderModal({
   onCreated: () => void;
 }) {
   const [filialeId, setFilialeId] = useState(defaultFilialeId ?? filialen[0]?.id ?? "");
+  const [department, setDepartment] = useState<Department>(DEPARTMENTS[0]);
   const [customerQuery, setCustomerQuery] = useState("");
   const [customerResultsRaw, setCustomerResults] = useState<CustomerListItem[]>([]);
   const customerResults = customerQuery.trim().length >= 2 ? customerResultsRaw : [];
@@ -149,6 +151,7 @@ export function NewOrderModal({
       body: JSON.stringify({
         customerId: selectedCustomer.id,
         filialeId,
+        department,
         note: note || undefined,
         items: items.map((i) => ({ articleId: i.articleId, quantity: i.quantity })),
       }),
@@ -182,6 +185,21 @@ export function NewOrderModal({
             {filialen.map((f) => (
               <option key={f.id} value={f.id}>
                 {f.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="mt-4 flex flex-col gap-1 text-sm font-medium text-foreground">
+          Abteilung
+          <select
+            value={department}
+            onChange={(e) => setDepartment(e.target.value as Department)}
+            className="rounded-lg border border-border px-3 py-2"
+          >
+            {DEPARTMENTS.map((d) => (
+              <option key={d} value={d}>
+                {DEPARTMENT_LABELS[d]}
               </option>
             ))}
           </select>
