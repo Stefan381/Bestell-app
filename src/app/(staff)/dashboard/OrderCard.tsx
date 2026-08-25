@@ -147,6 +147,8 @@ export function OrderCard({
     ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`, zIndex: 50 }
     : undefined;
 
+  const isNotifiedDelivered = order.status === "GELIEFERT" && Boolean(lastEmailNotification || lastWhatsappNotification);
+
   function openEditMode() {
     setForm(buildEditForm(order));
     setSaveError(null);
@@ -290,20 +292,28 @@ export function OrderCard({
       {...attributes}
       onClick={handleClick}
       onDoubleClick={handleDoubleClick}
-      className={`cursor-grab touch-none rounded-xl border border-border bg-surface px-3 py-2 shadow-sm transition active:cursor-grabbing ${
+      className={`cursor-grab touch-none rounded-xl border px-3 py-2 shadow-sm transition active:cursor-grabbing ${
         isDragging ? "opacity-60" : ""
-      }`}
+      } ${isNotifiedDelivered ? "border-green-200 bg-green-50" : "border-border bg-surface"}`}
     >
       <div className="flex items-center justify-between gap-2">
-        <div className="min-w-0">
+        <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-foreground">
             {order.customer.lastName}, {order.customer.firstName}
           </p>
           <p className="truncate text-xs text-foreground/60">Lieferant: {suppliersSummary(order)}</p>
         </div>
-        <span className="shrink-0 rounded-full bg-brand/10 px-2 py-0.5 text-xs font-medium text-brand-dark">
-          {order.department ? DEPARTMENT_LABELS[order.department as Department] : "–"}
-        </span>
+        <div className="flex shrink-0 items-center gap-1.5">
+          <span className="rounded-full bg-brand/10 px-2 py-0.5 text-xs font-medium text-brand-dark">
+            {order.department ? DEPARTMENT_LABELS[order.department as Department] : "–"}
+          </span>
+          <span
+            className="w-3 text-center font-mono text-sm leading-none text-foreground/40"
+            aria-hidden="true"
+          >
+            {expanded ? "−" : "+"}
+          </span>
+        </div>
       </div>
 
       {expanded && !editing && (
