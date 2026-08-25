@@ -32,6 +32,8 @@ const updateArticleSchema = z.object({
   name: z.string().trim().min(1).optional(),
   price: z.number().nonnegative().optional(),
   ean: z.string().trim().optional(),
+  manufacturer: z.string().trim().optional(),
+  supplier: z.string().trim().optional(),
   category: z.string().trim().optional(),
   stock: z.number().int().nonnegative().nullable().optional(),
 });
@@ -59,6 +61,8 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/articles/[
       ...(data.name !== undefined && { name: data.name }),
       ...(data.price !== undefined && { price: data.price }),
       ...(data.ean !== undefined && { ean: data.ean || null }),
+      ...(data.manufacturer !== undefined && { manufacturer: data.manufacturer || null }),
+      ...(data.supplier !== undefined && { supplier: data.supplier || null }),
       ...(data.category !== undefined && { category: data.category || null }),
       ...(data.stock !== undefined && { stock: data.stock }),
     },

@@ -37,6 +37,8 @@ const createArticleSchema = z.object({
   name: z.string().trim().min(1),
   price: z.number().nonnegative().optional(),
   ean: z.string().trim().optional(),
+  manufacturer: z.string().trim().optional(),
+  supplier: z.string().trim().optional(),
   category: z.string().trim().optional(),
   stock: z.number().int().nonnegative().optional(),
 });
@@ -71,6 +73,8 @@ export async function POST(request: Request) {
       name: data.name,
       price: data.price ?? 0,
       ean: data.ean || null,
+      manufacturer: data.manufacturer || null,
+      supplier: data.supplier || null,
       category: data.category || null,
       stock: data.stock ?? null,
     },

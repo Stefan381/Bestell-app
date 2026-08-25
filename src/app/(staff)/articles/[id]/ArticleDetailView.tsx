@@ -10,6 +10,8 @@ export function ArticleDetailView({ article }: { article: SerializedArticleDetai
     name: article.name,
     price: String(article.price),
     ean: article.ean ?? "",
+    manufacturer: article.manufacturer ?? "",
+    supplier: article.supplier ?? "",
     category: article.category ?? "",
     stock: article.stock !== null ? String(article.stock) : "",
   });
@@ -33,6 +35,8 @@ export function ArticleDetailView({ article }: { article: SerializedArticleDetai
         name: form.name,
         price,
         ean: form.ean,
+        manufacturer: form.manufacturer,
+        supplier: form.supplier,
         category: form.category,
         stock: form.stock ? Number(form.stock) : null,
       }),
@@ -116,6 +120,22 @@ export function ArticleDetailView({ article }: { article: SerializedArticleDetai
               <input
                 value={form.category}
                 onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
+                className="rounded-lg border border-border px-2 py-1.5"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              Hersteller
+              <input
+                value={form.manufacturer}
+                onChange={(e) => setForm((f) => ({ ...f, manufacturer: e.target.value }))}
+                className="rounded-lg border border-border px-2 py-1.5"
+              />
+            </label>
+            <label className="flex flex-col gap-1 text-sm">
+              Lieferant
+              <input
+                value={form.supplier}
+                onChange={(e) => setForm((f) => ({ ...f, supplier: e.target.value }))}
                 className="rounded-lg border border-border px-2 py-1.5"
               />
             </label>

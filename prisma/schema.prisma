@@ -101,6 +101,8 @@ model Article {
   name          String
   price         Decimal  @db.Decimal(10, 2)
   ean           String?
+  manufacturer  String?
+  supplier      String?
   category      String?
   stock         Int?
   createdAt     DateTime @default(now())

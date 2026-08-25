@@ -34,7 +34,14 @@ export function NewOrderModal({
   const [articleResultsRaw, setArticleResults] = useState<ArticleListItem[]>([]);
   const articleResults = articleQuery.trim().length >= 2 ? articleResultsRaw : [];
   const [showNewArticleForm, setShowNewArticleForm] = useState(false);
-  const [newArticle, setNewArticle] = useState({ name: "", price: "", articleNumber: "" });
+  const [newArticle, setNewArticle] = useState({
+    name: "",
+    price: "",
+    articleNumber: "",
+    manufacturer: "",
+    supplier: "",
+    ean: "",
+  });
   const [creatingArticle, setCreatingArticle] = useState(false);
   const [items, setItems] = useState<DraftItem[]>([]);
   const [note, setNote] = useState("");
@@ -113,6 +120,9 @@ export function NewOrderModal({
         name: newArticle.name,
         price: priceValue,
         articleNumber: newArticle.articleNumber || undefined,
+        manufacturer: newArticle.manufacturer || undefined,
+        supplier: newArticle.supplier || undefined,
+        ean: newArticle.ean || undefined,
       }),
     });
     const data = await res.json();
@@ -123,7 +133,7 @@ export function NewOrderModal({
     }
     addItem(data.article);
     setShowNewArticleForm(false);
-    setNewArticle({ name: "", price: "", articleNumber: "" });
+    setNewArticle({ name: "", price: "", articleNumber: "", manufacturer: "", supplier: "", ean: "" });
   }
 
   function updateQuantity(articleId: string, quantity: number) {
@@ -247,7 +257,10 @@ export function NewOrderModal({
                 </ul>
               )}
               <button
-                onClick={() => setShowNewCustomerForm((v) => !v)}
+                onClick={() => {
+                  setNewCustomer((v) => ({ ...v, lastName: v.lastName || customerQuery }));
+                  setShowNewCustomerForm((v) => !v);
+                }}
                 className="mt-1 text-xs font-medium text-brand hover:underline"
               >
                 {showNewCustomerForm ? "Abbrechen" : "+ Neuen Kunden anlegen"}
@@ -343,6 +356,24 @@ export function NewOrderModal({
                 placeholder="Artikelnr. (optional)"
                 value={newArticle.articleNumber}
                 onChange={(e) => setNewArticle((v) => ({ ...v, articleNumber: e.target.value }))}
+                className="rounded-lg border border-border px-2 py-1.5 text-sm"
+              />
+              <input
+                placeholder="EAN (optional)"
+                value={newArticle.ean}
+                onChange={(e) => setNewArticle((v) => ({ ...v, ean: e.target.value }))}
+                className="rounded-lg border border-border px-2 py-1.5 text-sm"
+              />
+              <input
+                placeholder="Hersteller (optional)"
+                value={newArticle.manufacturer}
+                onChange={(e) => setNewArticle((v) => ({ ...v, manufacturer: e.target.value }))}
+                className="rounded-lg border border-border px-2 py-1.5 text-sm"
+              />
+              <input
+                placeholder="Lieferant (optional)"
+                value={newArticle.supplier}
+                onChange={(e) => setNewArticle((v) => ({ ...v, supplier: e.target.value }))}
                 className="rounded-lg border border-border px-2 py-1.5 text-sm"
               />
               <p className="col-span-2 text-xs text-foreground/50">
