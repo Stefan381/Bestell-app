@@ -10,27 +10,62 @@ const SOURCE_LABEL: Record<string, string> = {
   MANUAL: "Manuell",
 };
 
+interface Filters {
+  name: string;
+  contact: string;
+  source: string;
+  gdprConsent: string;
+}
+
+const EMPTY_FILTERS: Filters = { name: "", contact: "", source: "", gdprConsent: "" };
+
+function buildParams(filters: Filters): string {
+  const params = new URLSearchParams();
+  if (filters.name) params.set("name", filters.name);
+  if (filters.contact) params.set("contact", filters.contact);
+  if (filters.source) params.set("source", filters.source);
+  if (filters.gdprConsent) params.set("gdprConsent", filters.gdprConsent);
+  return params.toString();
+}
+
 export function CustomersList({ initialCustomers }: { initialCustomers: CustomerListItem[] }) {
-  const [q, setQ] = useState("");
+  const [filters, setFilters] = useState<Filters>(EMPTY_FILTERS);
   const [customers, setCustomers] = useState(initialCustomers);
 
   useEffect(() => {
     const timeout = setTimeout(async () => {
-      const res = await fetch(`/api/customers?q=${encodeURIComponent(q)}`);
+      const res = await fetch(`/api/customers?${buildParams(filters)}`);
       const data = await res.json();
       setCustomers(data.customers ?? []);
     }, 250);
     return () => clearTimeout(timeout);
-  }, [q]);
+  }, [filters]);
+
+  function updateFilter(patch: Partial<Filters>) {
+    setFilters((f) => ({ ...f, ...patch }));
+  }
+
+  const exportHref = `/api/customers/export${(() => {
+    const qs = buildParams(filters);
+    return qs ? `?${qs}` : "";
+  })()}`;
 
   return (
     <div className="mt-4">
-      <input
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        placeholder="Suche: Name, E-Mail, Telefon, Kundennummer…"
-        className="w-full max-w-md rounded-lg border border-border px-3 py-2 text-sm"
-      />
+      <div className="flex flex-wrap items-center justify-end gap-2">
+        <Link
+          href="/import"
+          className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground/70 hover:border-brand hover:text-brand"
+        >
+          Kunden importieren
+        </Link>
+        <a
+          href={exportHref}
+          className="rounded-lg border border-border px-3 py-2 text-sm font-medium text-foreground/70 hover:border-brand hover:text-brand"
+        >
+          Kunden exportieren (CSV)
+        </a>
+      </div>
 
       <div className="mt-4 overflow-x-auto rounded-xl border border-border bg-surface">
         <table className="w-full min-w-[700px] text-left text-sm">
@@ -41,6 +76,57 @@ export function CustomersList({ initialCustomers }: { initialCustomers: Customer
               <th className="px-3 py-2">Herkunft</th>
               <th className="px-3 py-2">DSGVO</th>
               <th className="px-3 py-2">Bestellungen</th>
+            </tr>
+            <tr className="border-t border-border normal-case">
+              <th className="px-3 py-1.5">
+                <input
+                  value={filters.name}
+                  onChange={(e) => updateFilter({ name: e.target.value })}
+                  placeholder="Nach Name filtern…"
+                  className="w-full rounded-lg border border-border px-2 py-1 text-xs font-normal text-foreground"
+                />
+              </th>
+              <th className="px-3 py-1.5">
+                <input
+                  value={filters.contact}
+                  onChange={(e) => updateFilter({ contact: e.target.value })}
+                  placeholder="E-Mail/Telefon…"
+                  className="w-full rounded-lg border border-border px-2 py-1 text-xs font-normal text-foreground"
+                />
+              </th>
+              <th className="px-3 py-1.5">
+                <select
+                  value={filters.source}
+                  onChange={(e) => updateFilter({ source: e.target.value })}
+                  className="w-full rounded-lg border border-border px-2 py-1 text-xs font-normal text-foreground"
+                >
+                  <option value="">Alle</option>
+                  <option value="KASSE">Kasse</option>
+                  <option value="HUBSPOT">HubSpot</option>
+                  <option value="MANUAL">Manuell</option>
+                </select>
+              </th>
+              <th className="px-3 py-1.5">
+                <select
+                  value={filters.gdprConsent}
+                  onChange={(e) => updateFilter({ gdprConsent: e.target.value })}
+                  className="w-full rounded-lg border border-border px-2 py-1 text-xs font-normal text-foreground"
+                >
+                  <option value="">Alle</option>
+                  <option value="true">Ja</option>
+                  <option value="false">Nein</option>
+                </select>
+              </th>
+              <th className="px-3 py-1.5">
+                {(filters.name || filters.contact || filters.source || filters.gdprConsent) && (
+                  <button
+                    onClick={() => setFilters(EMPTY_FILTERS)}
+                    className="text-xs font-normal text-foreground/50 hover:text-brand"
+                  >
+                    Filter zurücksetzen
+                  </button>
+                )}
+              </th>
             </tr>
           </thead>
           <tbody>

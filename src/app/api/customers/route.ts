@@ -2,26 +2,17 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireStaffSession } from "@/lib/auth/apiAuth";
+import { buildCustomerWhere } from "@/lib/customerFilters";
 
 export async function GET(request: Request) {
   const auth = await requireStaffSession();
   if (!auth.session) return auth.response;
 
   const { searchParams } = new URL(request.url);
-  const q = searchParams.get("q")?.trim();
+  const where = buildCustomerWhere(searchParams);
 
   const customers = await prisma.customer.findMany({
-    where: q
-      ? {
-          OR: [
-            { firstName: { contains: q, mode: "insensitive" } },
-            { lastName: { contains: q, mode: "insensitive" } },
-            { email: { contains: q, mode: "insensitive" } },
-            { phone: { contains: q } },
-            { externalRef: { contains: q, mode: "insensitive" } },
-          ],
-        }
-      : undefined,
+    where,
     orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
     take: 50,
     include: { _count: { select: { orders: true } } },
