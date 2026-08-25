@@ -5,7 +5,11 @@ import { requireStaffSession } from "@/lib/auth/apiAuth";
 
 const updateTemplateSchema = z.object({
   name: z.string().trim().min(1).optional(),
-  subject: z.string().trim().optional(),
+  // Nullable: WhatsApp templates have no subject field, and the form sends
+  // null (not omitted) once a subject is cleared - z.string().optional()
+  // rejects null and produced "Invalid input: expected string, received
+  // null" on every save that did this.
+  subject: z.string().trim().optional().nullable(),
   body: z.string().trim().min(1).optional(),
   isDefault: z.boolean().optional(),
 });

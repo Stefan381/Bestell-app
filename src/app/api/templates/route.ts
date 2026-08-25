@@ -14,7 +14,7 @@ export async function GET() {
 const createTemplateSchema = z.object({
   name: z.string().trim().min(1),
   channel: z.enum(["EMAIL", "WHATSAPP"]),
-  subject: z.string().trim().optional(),
+  subject: z.string().trim().optional().nullable(),
   body: z.string().trim().min(1),
   isDefault: z.boolean().optional(),
 });
