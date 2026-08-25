@@ -30,13 +30,23 @@ export async function GET(request: Request) {
 }
 
 const createArticleSchema = z.object({
-  articleNumber: z.string().trim().min(1),
+  // Both optional: an article can be added on the fly (e.g. from the New
+  // Order modal) without knowing the article number or price yet - staff
+  // can fill those in later from the article's detail page.
+  articleNumber: z.string().trim().min(1).optional(),
   name: z.string().trim().min(1),
-  price: z.number().nonnegative(),
+  price: z.number().nonnegative().optional(),
   ean: z.string().trim().optional(),
   category: z.string().trim().optional(),
   stock: z.number().int().nonnegative().optional(),
 });
+
+/** Placeholder article number for quick-add flows that don't have a real
+ * one yet - prefixed so staff can spot and clean these up later (e.g. by
+ * searching "NEU-"). */
+function generatePlaceholderArticleNumber(): string {
+  return `NEU-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+}
 
 export async function POST(request: Request) {
   const auth = await requireStaffSession();
@@ -48,17 +58,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: parsed.error.issues[0]?.message }, { status: 400 });
   }
   const data = parsed.data;
+  const articleNumber = data.articleNumber || generatePlaceholderArticleNumber();
 
-  const duplicate = await prisma.article.findUnique({ where: { articleNumber: data.articleNumber } });
+  const duplicate = await prisma.article.findUnique({ where: { articleNumber } });
   if (duplicate) {
     return NextResponse.json({ error: "Artikelnummer existiert bereits." }, { status: 409 });
   }
 
   const article = await prisma.article.create({
     data: {
-      articleNumber: data.articleNumber,
+      articleNumber,
       name: data.name,
-      price: data.price,
+      price: data.price ?? 0,
       ean: data.ean || null,
       category: data.category || null,
       stock: data.stock ?? null,

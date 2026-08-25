@@ -31,6 +31,9 @@ export function NewOrderModal({
   const [articleQuery, setArticleQuery] = useState("");
   const [articleResultsRaw, setArticleResults] = useState<ArticleListItem[]>([]);
   const articleResults = articleQuery.trim().length >= 2 ? articleResultsRaw : [];
+  const [showNewArticleForm, setShowNewArticleForm] = useState(false);
+  const [newArticle, setNewArticle] = useState({ name: "", price: "", articleNumber: "" });
+  const [creatingArticle, setCreatingArticle] = useState(false);
   const [items, setItems] = useState<DraftItem[]>([]);
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -76,7 +79,7 @@ export function NewOrderModal({
     setError(null);
   }
 
-  function addItem(article: ArticleListItem) {
+  function addItem(article: { id: string; name: string }) {
     setItems((prev) => {
       const existing = prev.find((i) => i.articleId === article.id);
       if (existing) {
@@ -86,6 +89,39 @@ export function NewOrderModal({
     });
     setArticleQuery("");
     setArticleResults([]);
+  }
+
+  async function createArticle() {
+    if (!newArticle.name.trim()) {
+      setError("Bitte mindestens eine Bezeichnung für den neuen Artikel eingeben.");
+      return;
+    }
+    setCreatingArticle(true);
+    setError(null);
+    const priceValue = newArticle.price.trim() ? Number(newArticle.price.replace(",", ".")) : undefined;
+    if (priceValue !== undefined && Number.isNaN(priceValue)) {
+      setCreatingArticle(false);
+      setError("Ungültiger Preis.");
+      return;
+    }
+    const res = await fetch("/api/articles", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: newArticle.name,
+        price: priceValue,
+        articleNumber: newArticle.articleNumber || undefined,
+      }),
+    });
+    const data = await res.json();
+    setCreatingArticle(false);
+    if (!res.ok) {
+      setError(data.error ?? "Artikel konnte nicht angelegt werden.");
+      return;
+    }
+    addItem(data.article);
+    setShowNewArticleForm(false);
+    setNewArticle({ name: "", price: "", articleNumber: "" });
   }
 
   function updateQuantity(articleId: string, quantity: number) {
@@ -260,6 +296,49 @@ export function NewOrderModal({
                 </li>
               ))}
             </ul>
+          )}
+
+          <button
+            onClick={() => {
+              setNewArticle((v) => ({ ...v, name: v.name || articleQuery }));
+              setShowNewArticleForm((v) => !v);
+            }}
+            className="mt-1 text-xs font-medium text-brand hover:underline"
+          >
+            {showNewArticleForm ? "Abbrechen" : "+ Neuer Artikel (noch nicht im Artikelstamm)"}
+          </button>
+          {showNewArticleForm && (
+            <div className="mt-2 grid grid-cols-2 gap-2 rounded-lg border border-border p-3">
+              <input
+                placeholder="Bezeichnung"
+                value={newArticle.name}
+                onChange={(e) => setNewArticle((v) => ({ ...v, name: e.target.value }))}
+                className="col-span-2 rounded-lg border border-border px-2 py-1.5 text-sm"
+              />
+              <input
+                placeholder="Preis € (optional)"
+                value={newArticle.price}
+                onChange={(e) => setNewArticle((v) => ({ ...v, price: e.target.value }))}
+                className="rounded-lg border border-border px-2 py-1.5 text-sm"
+              />
+              <input
+                placeholder="Artikelnr. (optional)"
+                value={newArticle.articleNumber}
+                onChange={(e) => setNewArticle((v) => ({ ...v, articleNumber: e.target.value }))}
+                className="rounded-lg border border-border px-2 py-1.5 text-sm"
+              />
+              <p className="col-span-2 text-xs text-foreground/50">
+                Nur die Bezeichnung ist Pflicht — Preis und Artikelnummer können später im Artikelstamm
+                ergänzt werden.
+              </p>
+              <button
+                onClick={createArticle}
+                disabled={creatingArticle}
+                className="col-span-2 rounded-lg bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-dark disabled:opacity-60"
+              >
+                {creatingArticle ? "Wird angelegt…" : "Artikel anlegen & hinzufügen"}
+              </button>
+            </div>
           )}
 
           {items.length > 0 && (
