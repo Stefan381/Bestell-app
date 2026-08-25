@@ -8,10 +8,12 @@ function Column({
   status,
   orders,
   onStatusChange,
+  onNotified,
 }: {
   status: (typeof STATUS_ORDER)[number];
   orders: SerializedOrder[];
   onStatusChange: (orderId: string, status: (typeof STATUS_ORDER)[number]) => void;
+  onNotified: () => void;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
 
@@ -29,7 +31,7 @@ function Column({
         </span>
       </div>
       {orders.map((order) => (
-        <OrderCard key={order.id} order={order} onStatusChange={onStatusChange} />
+        <OrderCard key={order.id} order={order} onStatusChange={onStatusChange} onNotified={onNotified} />
       ))}
       {orders.length === 0 && (
         <p className="px-1 py-6 text-center text-xs text-foreground/40">Keine Bestellungen</p>
@@ -41,9 +43,11 @@ function Column({
 export function KanbanView({
   orders,
   onStatusChange,
+  onNotified,
 }: {
   orders: SerializedOrder[];
   onStatusChange: (orderId: string, status: (typeof STATUS_ORDER)[number]) => void;
+  onNotified: () => void;
 }) {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 5 } }));
 
@@ -65,6 +69,7 @@ export function KanbanView({
             status={status}
             orders={orders.filter((o) => o.status === status)}
             onStatusChange={onStatusChange}
+            onNotified={onNotified}
           />
         ))}
       </div>

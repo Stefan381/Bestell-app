@@ -2,8 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireStaffSession } from "@/lib/auth/apiAuth";
-import { sendOrderReadyNotification } from "@/lib/notifications";
-import { orderStaffInclude } from "@/lib/orderInclude";
+import { orderNotificationsInclude, orderStaffInclude } from "@/lib/orderInclude";
 import { toPlainOrder } from "@/lib/apiSerialize";
 
 export async function GET(_request: Request, ctx: RouteContext<"/api/orders/[id]">) {
@@ -13,10 +12,7 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/orders/[id]
   const { id } = await ctx.params;
   const order = await prisma.order.findUnique({
     where: { id },
-    include: {
-      ...orderStaffInclude,
-      notifications: { orderBy: { createdAt: "desc" } },
-    },
+    include: { ...orderStaffInclude, notifications: orderNotificationsInclude },
   });
 
   if (!order) return NextResponse.json({ error: "Bestellung nicht gefunden." }, { status: 404 });
@@ -43,10 +39,9 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/orders/[id
   const existing = await prisma.order.findUnique({ where: { id } });
   if (!existing) return NextResponse.json({ error: "Bestellung nicht gefunden." }, { status: 404 });
 
-  const statusChangingToDelivered = data.status === "GELIEFERT" && existing.status !== "GELIEFERT";
   const now = new Date();
 
-  await prisma.order.update({
+  const order = await prisma.order.update({
     where: { id },
     data: {
       ...(data.note !== undefined && { note: data.note || null }),
@@ -60,17 +55,7 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/orders/[id
         deliveredByUserId: auth.session.userId,
       }),
     },
-  });
-
-  if (statusChangingToDelivered) {
-    await sendOrderReadyNotification(id, "EMAIL");
-  }
-
-  // Re-fetch so the response always carries the latest notification (if one
-  // was just sent above) — a single include shape shared with GET/list.
-  const order = await prisma.order.findUniqueOrThrow({
-    where: { id },
-    include: { ...orderStaffInclude, notifications: { orderBy: { createdAt: "desc" }, take: 1 } },
+    include: { ...orderStaffInclude, notifications: orderNotificationsInclude },
   });
 
   return NextResponse.json({ order: toPlainOrder(order) });

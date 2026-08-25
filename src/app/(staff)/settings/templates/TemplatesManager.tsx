@@ -119,6 +119,11 @@ export function TemplatesManager({ initialTemplates }: { initialTemplates: Messa
   return (
     <div>
       <p className="text-sm text-foreground/60">
+        Diese Standardvorlagen werden verwendet, wenn Personal auf einer gelieferten Bestellung „Per
+        E-Mail/WhatsApp informieren" klickt — der Text wird mit den echten Bestelldaten ausgefüllt und im
+        Mailprogramm bzw. WhatsApp zum Versenden geöffnet.
+      </p>
+      <p className="mt-1 text-sm text-foreground/60">
         Platzhalter: {PLACEHOLDERS.map((p) => `{{${p}}}`).join(", ")}
       </p>
       {error && <p className="mt-2 text-sm text-red-600">{error}</p>}

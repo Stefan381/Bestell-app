@@ -142,7 +142,7 @@ export function DashboardBoard({
 
       <div className={`mt-4 ${loading ? "opacity-50" : ""}`}>
         {view === "kanban" ? (
-          <KanbanView orders={orders} onStatusChange={handleStatusChange} />
+          <KanbanView orders={orders} onStatusChange={handleStatusChange} onNotified={() => refetch(filters)} />
         ) : (
           <TableView orders={orders} />
         )}

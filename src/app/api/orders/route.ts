@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireStaffSession } from "@/lib/auth/apiAuth";
 import type { Prisma } from "@/generated/prisma/client";
-import { orderStaffInclude } from "@/lib/orderInclude";
+import { orderNotificationsInclude, orderStaffInclude } from "@/lib/orderInclude";
 import { toPlainOrder } from "@/lib/apiSerialize";
 
 export async function GET(request: Request) {
@@ -52,7 +52,7 @@ export async function GET(request: Request) {
     orderBy: { createdAt: "desc" },
     include: {
       ...orderStaffInclude,
-      notifications: { orderBy: { createdAt: "desc" }, take: 1 },
+      notifications: orderNotificationsInclude,
     },
     take: 300,
   });
@@ -106,7 +106,7 @@ export async function POST(request: Request) {
         })),
       },
     },
-    include: { items: { include: { article: true } }, customer: true, filiale: true },
+    include: { items: { include: { article: true } }, customer: true, filiale: true, notifications: true },
   });
 
   return NextResponse.json({ order: toPlainOrder(order) }, { status: 201 });

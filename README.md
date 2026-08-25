@@ -14,7 +14,6 @@ Kiosk-Modus ohne Login für Kunden am Tablet im Laden.
 - **Tailwind CSS v4**
 - **papaparse** (CSV) / **exceljs** (Excel) für den Import
 - **@dnd-kit** für das Kanban-Board (Touch-fähig, anders als natives HTML5-DnD)
-- **nodemailer** für E-Mail-Versand
 - **zod** für Validierung, **vitest** für Unit-Tests
 
 ## Setup
@@ -61,13 +60,20 @@ Anlegen neuer Kunden verwendet. Eine künftige Live-Anbindung an Kasse/HubSpot
 müsste nur eine neue `CustomerSource`/`ArticleSource`-Implementierung
 (`types.ts`) liefern – Matching und Persistenz bleiben unverändert.
 
-### Benachrichtigungs-Abstraktion (`src/lib/notifications/`)
+### Benachrichtigung per Klick (`src/lib/notifications/`)
 
-`channel.ts` definiert `NotificationChannel.send()`. `emailChannel.ts` ist eine
-echte Nodemailer-Implementierung; `whatsappChannel.ts` ist ein Platzhalter, der
-klar protokolliert, dass die WhatsApp Business API noch nicht angebunden ist
-(siehe Projektbrief §6). Ein Wechsel auf einen echten Anbieter (Meta Cloud API,
-Twilio, 360dialog) betrifft nur diese eine Datei.
+Es gibt **keinen automatischen Versand** (kein SMTP, keine WhatsApp Business
+API) – das scheiterte in der Praxis regelmäßig an fehlender/nicht
+einrichtbarer SMTP-Konfiguration. Stattdessen: Auf einer gelieferten
+Bestellung rendert `renderOrderNotification()` die Standardvorlage des
+Kanals mit den echten Bestelldaten, `POST /api/orders/[id]/notify` liefert
+das Ergebnis an den Client und protokolliert den Klick (`Notification` mit
+`sentByUserId`). Der Client öffnet dann direkt das Standard-Mailprogramm
+(`mailto:`-Link mit vorausgefülltem Betreff/Text) bzw. WhatsApp
+(`https://wa.me/<Nummer>?text=...`, öffnet WhatsApp Web/die App mit
+vorausgefülltem Text). Das eigentliche Absenden macht immer die Person am
+Rechner – die App bereitet nur vor und merkt sich, wer wann über welchen
+Kanal informiert hat.
 
 ### Bekannte Einschränkungen
 
@@ -96,6 +102,8 @@ Twilio, 360dialog) betrifft nur diese eine Datei.
 ## Nicht umgesetzt (laut Brief bewusst vorbereitet, nicht gebaut)
 
 - Live-API-Anbindung an Kasse/HubSpot (Interface vorhanden, kein Live-Connector)
-- Tatsächlicher WhatsApp-Versand (nur vorbereiteter Kanal-Stub)
+- Automatischer E-Mail/WhatsApp-Versand über SMTP bzw. die WhatsApp Business
+  API – bewusst durch das Klick-zu-mailto:/wa.me-Vorgehen ersetzt (siehe
+  oben), da SMTP in der Praxis nicht einrichtbar war
 - Cloud-Hosting/Infrastruktur-Provisionierung (App ist Cloud-ready: Konfiguration
   vollständig über Umgebungsvariablen, kein lokaler Dateisystem-State)

@@ -1,8 +1,8 @@
 import type { Prisma } from "@/generated/prisma/client";
-import { orderStaffInclude } from "./orderInclude";
+import { orderNotificationsInclude, orderStaffInclude } from "./orderInclude";
 
 export type OrderWithRelations = Prisma.OrderGetPayload<{
-  include: typeof orderStaffInclude & { notifications: true };
+  include: typeof orderStaffInclude & { notifications: typeof orderNotificationsInclude };
 }>;
 
 export type CustomerListItem = Prisma.CustomerGetPayload<{

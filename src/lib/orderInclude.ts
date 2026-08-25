@@ -9,3 +9,11 @@ export const orderStaffInclude = {
   orderedByUser: { select: { id: true, name: true } },
   deliveredByUser: { select: { id: true, name: true } },
 } as const;
+
+/** Shared include for the notification history shown on an order card -
+ * enough rows to show the latest per channel, with who clicked "informieren". */
+export const orderNotificationsInclude = {
+  orderBy: { createdAt: "desc" as const },
+  take: 20,
+  include: { sentByUser: { select: { id: true, name: true } } },
+} as const;

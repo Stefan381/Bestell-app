@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { orderStaffInclude } from "@/lib/orderInclude";
+import { orderNotificationsInclude, orderStaffInclude } from "@/lib/orderInclude";
 import { serializeOrders } from "@/lib/serialize";
 import { DashboardBoard } from "./DashboardBoard";
 
@@ -7,7 +7,7 @@ export default async function DashboardPage() {
   const [orders, filialen, users] = await Promise.all([
     prisma.order.findMany({
       orderBy: { createdAt: "desc" },
-      include: { ...orderStaffInclude, notifications: { orderBy: { createdAt: "desc" } } },
+      include: { ...orderStaffInclude, notifications: orderNotificationsInclude },
       take: 300,
     }),
     prisma.filiale.findMany({ orderBy: { name: "asc" } }),

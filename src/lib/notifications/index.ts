@@ -1,13 +1,7 @@
 import { prisma } from "@/lib/prisma";
-import { EmailChannel } from "./emailChannel";
-import { WhatsAppChannel } from "./whatsappChannel";
 import { renderTemplate } from "./templateRenderer";
-import type { NotificationChannel } from "./channel";
 
-const channels: Record<"EMAIL" | "WHATSAPP", NotificationChannel> = {
-  EMAIL: new EmailChannel(),
-  WHATSAPP: new WhatsAppChannel(),
-};
+export class NotificationRenderError extends Error {}
 
 function formatItems(
   items: { quantity: number; freeTextWish: string | null; article: { name: string } | null }[]
@@ -20,14 +14,35 @@ function formatItems(
     .join(", ");
 }
 
+/** Normalizes a phone number for a wa.me deep link: digits only, no leading
+ * `+`. A bare German trunk number ("0151...", no country code) gets `49`
+ * prefixed - a reasonable default for a single-country business, but not a
+ * general phone-number library. */
+export function toWhatsAppPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (phone.trim().startsWith("+")) return digits;
+  if (digits.startsWith("0")) return `49${digits.slice(1)}`;
+  return digits;
+}
+
+export interface RenderedOrderNotification {
+  recipient: string;
+  subject?: string;
+  body: string;
+  templateId: string;
+}
+
 /**
- * Triggered when an order's status moves to GELIEFERT. Always fires
- * regardless of the customer's marketing-consent flag — this is a
- * transactional "your order is ready" message, not marketing (brief §4.4).
- * Picks the default template for the channel, renders it, sends it, and
- * writes the Notification audit row either way (sent or failed).
+ * Renders the default template for a channel with this order's real data.
+ * Does not send anything - "sending" in this app means opening a prefilled
+ * mailto:/wa.me link, which only the client (browser) can do. Throws
+ * NotificationRenderError when there's nothing to notify with (no
+ * recipient on file, or no default template configured for the channel).
  */
-export async function sendOrderReadyNotification(orderId: string, channel: "EMAIL" | "WHATSAPP" = "EMAIL") {
+export async function renderOrderNotification(
+  orderId: string,
+  channel: "EMAIL" | "WHATSAPP"
+): Promise<RenderedOrderNotification> {
   const order = await prisma.order.findUniqueOrThrow({
     where: { id: orderId },
     include: {
@@ -38,24 +53,17 @@ export async function sendOrderReadyNotification(orderId: string, channel: "EMAI
   });
 
   const recipient = channel === "EMAIL" ? order.customer.email : order.customer.phone;
+  if (!recipient) {
+    throw new NotificationRenderError(
+      channel === "EMAIL"
+        ? "Kunde hat keine E-Mail-Adresse hinterlegt."
+        : "Kunde hat keine Telefonnummer hinterlegt."
+    );
+  }
 
-  const template = await prisma.messageTemplate.findFirst({
-    where: { channel, isDefault: true },
-  });
-
-  if (!recipient || !template) {
-    return prisma.notification.create({
-      data: {
-        orderId,
-        channel,
-        status: "FAILED",
-        recipient: recipient ?? "",
-        renderedBody: "",
-        errorMessage: !recipient
-          ? `Kunde hat keine ${channel === "EMAIL" ? "E-Mail-Adresse" : "Telefonnummer"} hinterlegt.`
-          : `Keine Standardvorlage für Kanal ${channel} konfiguriert.`,
-      },
-    });
+  const template = await prisma.messageTemplate.findFirst({ where: { channel, isDefault: true } });
+  if (!template) {
+    throw new NotificationRenderError(`Keine Standardvorlage für Kanal ${channel} konfiguriert.`);
   }
 
   const variables = {
@@ -66,25 +74,36 @@ export async function sendOrderReadyNotification(orderId: string, channel: "EMAI
     abholhinweis: "Bitte Bestellbestätigung oder Kundenkarte mitbringen.",
   };
 
-  const renderedBody = renderTemplate(template.body, variables);
-  const renderedSubject = template.subject ? renderTemplate(template.subject, variables) : undefined;
+  return {
+    recipient: channel === "EMAIL" ? recipient : toWhatsAppPhone(recipient),
+    subject: template.subject ? renderTemplate(template.subject, variables) : undefined,
+    body: renderTemplate(template.body, variables),
+    templateId: template.id,
+  };
+}
 
-  const result = await channels[channel].send({
-    recipient,
-    subject: renderedSubject,
-    body: renderedBody,
-  });
-
+/** Records that a staff member opened a prefilled mailto:/wa.me compose
+ * window for this order - the audit trail the brief asks for ("gesendet:
+ * Ja/Nein, wann, über welchen Kanal"), now driven by a manual click instead
+ * of a system-confirmed send. */
+export async function logOrderNotification(params: {
+  orderId: string;
+  channel: "EMAIL" | "WHATSAPP";
+  recipient: string;
+  body: string;
+  templateId: string;
+  sentByUserId: string;
+}) {
   return prisma.notification.create({
     data: {
-      orderId,
-      channel,
-      status: result.success ? "SENT" : "FAILED",
-      recipient,
-      templateId: template.id,
-      renderedBody,
-      errorMessage: result.errorMessage,
-      sentAt: result.success ? new Date() : null,
+      orderId: params.orderId,
+      channel: params.channel,
+      status: "SENT",
+      recipient: params.recipient,
+      templateId: params.templateId,
+      renderedBody: params.body,
+      sentAt: new Date(),
+      sentByUserId: params.sentByUserId,
     },
   });
 }
