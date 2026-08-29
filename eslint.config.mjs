@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Separate Expo app with its own lint/build pipeline (see kundenpilot-app/README.md).
+    "kundenpilot-app/**",
   ]),
 ]);
 
