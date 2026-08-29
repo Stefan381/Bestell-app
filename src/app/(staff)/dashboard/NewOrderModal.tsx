@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { ArticleListItem, CustomerListItem, FilialeItem } from "@/lib/types";
 import { DEPARTMENTS, DEPARTMENT_LABELS, type Department } from "@/lib/departments";
+import { customerFullName } from "@/lib/customerName";
 
 interface DraftItem {
   articleId: string;
@@ -69,8 +70,8 @@ export function NewOrderModal({
   }, [articleQuery]);
 
   async function createCustomer() {
-    if (!newCustomer.firstName.trim() || !newCustomer.lastName.trim()) {
-      setError("Vor- und Nachname des Kunden erforderlich.");
+    if (!newCustomer.lastName.trim()) {
+      setError("Nachname des Kunden erforderlich.");
       return;
     }
     const res = await fetch("/api/customers", {
@@ -219,9 +220,7 @@ export function NewOrderModal({
           <p className="text-sm font-medium text-foreground">Kunde</p>
           {selectedCustomer ? (
             <div className="mt-1 flex items-center justify-between rounded-lg border border-border px-3 py-2">
-              <span>
-                {selectedCustomer.firstName} {selectedCustomer.lastName}
-              </span>
+              <span>{customerFullName(selectedCustomer)}</span>
               <button
                 onClick={() => setSelectedCustomer(null)}
                 className="text-xs text-foreground/50 hover:text-foreground"
@@ -249,7 +248,7 @@ export function NewOrderModal({
                         }}
                         className="block w-full px-3 py-2 text-left hover:bg-brand/5"
                       >
-                        {c.firstName} {c.lastName}{" "}
+                        {customerFullName(c)}{" "}
                         <span className="text-xs text-foreground/50">{c.email || c.phone}</span>
                       </button>
                     </li>
@@ -268,7 +267,7 @@ export function NewOrderModal({
               {showNewCustomerForm && (
                 <div className="mt-2 grid grid-cols-2 gap-2 rounded-lg border border-border p-3">
                   <input
-                    placeholder="Vorname"
+                    placeholder="Vorname (optional)"
                     value={newCustomer.firstName}
                     onChange={(e) => setNewCustomer((v) => ({ ...v, firstName: e.target.value }))}
                     className="rounded-lg border border-border px-2 py-1.5 text-sm"

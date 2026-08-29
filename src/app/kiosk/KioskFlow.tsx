@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { customerFullName } from "@/lib/customerName";
 
 type Step = "contact" | "identify-confirm" | "items" | "review" | "done";
 
@@ -29,7 +30,11 @@ const BUTTON_SECONDARY =
 export function KioskFlow({ filialeId, filialeName }: { filialeId: string; filialeName: string }) {
   const [step, setStep] = useState<Step>("contact");
   const [contact, setContact] = useState({ firstName: "", lastName: "", email: "", phone: "" });
-  const [identifiedCustomer, setIdentifiedCustomer] = useState<{ id: string; firstName: string; lastName: string } | null>(null);
+  const [identifiedCustomer, setIdentifiedCustomer] = useState<{
+    id: string;
+    firstName: string | null;
+    lastName: string;
+  } | null>(null);
   const [contactError, setContactError] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
 
@@ -43,6 +48,7 @@ export function KioskFlow({ filialeId, filialeName }: { filialeId: string; filia
   const [marketingConsent, setMarketingConsent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [doneOrderNumber, setDoneOrderNumber] = useState<string | null>(null);
 
   useEffect(() => {
     if (articleQuery.trim().length < 2) return;
@@ -69,12 +75,13 @@ export function KioskFlow({ filialeId, filialeName }: { filialeId: string; filia
     setNote("");
     setMarketingConsent(false);
     setSubmitError(null);
+    setDoneOrderNumber(null);
   }
 
   async function submitContact() {
     setContactError(null);
-    if (!contact.firstName.trim() || !contact.lastName.trim()) {
-      setContactError("Bitte Vor- und Nachname eingeben.");
+    if (!contact.lastName.trim()) {
+      setContactError("Bitte Nachname eingeben.");
       return;
     }
     if (!contact.email.trim() && !contact.phone.trim()) {
@@ -157,6 +164,8 @@ export function KioskFlow({ filialeId, filialeName }: { filialeId: string; filia
       setSubmitError(data.error ?? "Bestellung konnte nicht übermittelt werden.");
       return;
     }
+    const data = await res.json().catch(() => ({}));
+    setDoneOrderNumber(data.orderNumber ?? null);
     setStep("done");
   }
 
@@ -171,7 +180,7 @@ export function KioskFlow({ filialeId, filialeName }: { filialeId: string; filia
           <div className="flex flex-col gap-4">
             <h2 className="text-2xl font-bold text-foreground">Willkommen! Wer sind Sie?</h2>
             <input
-              placeholder="Vorname"
+              placeholder="Vorname (optional)"
               value={contact.firstName}
               onChange={(e) => setContact((c) => ({ ...c, firstName: e.target.value }))}
               className={INPUT_CLASS}
@@ -204,7 +213,7 @@ export function KioskFlow({ filialeId, filialeName }: { filialeId: string; filia
         {step === "identify-confirm" && identifiedCustomer && (
           <div className="flex flex-col gap-4 text-center">
             <h2 className="text-2xl font-bold text-foreground">
-              Sind Sie {identifiedCustomer.firstName} {identifiedCustomer.lastName}?
+              Sind Sie {customerFullName(identifiedCustomer)}?
             </h2>
             <p className="text-foreground/60">Wir haben Sie bereits in unserem System gefunden.</p>
             <button onClick={() => setStep("items")} className={BUTTON_PRIMARY}>
@@ -330,6 +339,11 @@ export function KioskFlow({ filialeId, filialeName }: { filialeId: string; filia
           <div className="flex flex-col items-center gap-4 text-center">
             <div className="text-5xl">✓</div>
             <h2 className="text-2xl font-bold text-foreground">Danke! Ihre Bestellung wurde aufgenommen.</h2>
+            {doneOrderNumber && (
+              <p className="text-foreground/70">
+                Ihre Vorgangsnummer: <span className="font-mono text-xl font-semibold">{doneOrderNumber}</span>
+              </p>
+            )}
             <p className="text-foreground/60">
               Wir benachrichtigen Sie, sobald Ihre Bestellung abholbereit ist.
             </p>

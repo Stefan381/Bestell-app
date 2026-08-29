@@ -2,7 +2,7 @@ import { z } from "zod";
 import type { NormalizedArticleRow, NormalizedCustomerRow } from "./types";
 
 const customerRowSchema = z.object({
-  firstName: z.string().trim().min(1),
+  firstName: z.string().trim().optional(),
   lastName: z.string().trim().min(1),
   email: z.string().trim().optional(),
   phone: z.string().trim().optional(),
@@ -53,7 +53,7 @@ export function rowsToCustomerRows(
     }
     const data = parsed.data;
     rows.push({
-      firstName: data.firstName,
+      firstName: data.firstName || null,
       lastName: data.lastName,
       email: data.email || null,
       phone: data.phone || null,

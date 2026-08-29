@@ -67,7 +67,7 @@ export async function renderOrderNotification(
   }
 
   const variables = {
-    kundeVorname: order.customer.firstName,
+    kundeVorname: order.customer.firstName ?? "",
     kundeNachname: order.customer.lastName,
     artikel: formatItems(order.items),
     filiale: order.filiale.name,

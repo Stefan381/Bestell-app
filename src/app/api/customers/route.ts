@@ -22,7 +22,7 @@ export async function GET(request: Request) {
 }
 
 const createCustomerSchema = z.object({
-  firstName: z.string().trim().min(1),
+  firstName: z.string().trim().optional(),
   lastName: z.string().trim().min(1),
   email: z.string().trim().email().optional().or(z.literal("")),
   phone: z.string().trim().optional(),
@@ -43,7 +43,7 @@ export async function POST(request: Request) {
 
   const customer = await prisma.customer.create({
     data: {
-      firstName: data.firstName,
+      firstName: data.firstName || null,
       lastName: data.lastName,
       email: data.email || null,
       phone: data.phone || null,

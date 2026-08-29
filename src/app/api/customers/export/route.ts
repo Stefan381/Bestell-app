@@ -27,7 +27,7 @@ export async function GET(request: Request) {
 
   const csv = Papa.unparse(
     customers.map((c) => ({
-      Vorname: c.firstName,
+      Vorname: c.firstName ?? "",
       Nachname: c.lastName,
       "E-Mail": c.email ?? "",
       Telefon: c.phone ?? "",

@@ -26,7 +26,7 @@ export async function GET(_request: Request, ctx: RouteContext<"/api/customers/[
 }
 
 const updateCustomerSchema = z.object({
-  firstName: z.string().trim().min(1).optional(),
+  firstName: z.string().trim().optional(),
   lastName: z.string().trim().min(1).optional(),
   email: z.string().trim().email().optional().or(z.literal("")),
   phone: z.string().trim().optional(),
@@ -56,7 +56,7 @@ export async function PATCH(request: Request, ctx: RouteContext<"/api/customers/
   const customer = await prisma.customer.update({
     where: { id },
     data: {
-      ...(data.firstName !== undefined && { firstName: data.firstName }),
+      ...(data.firstName !== undefined && { firstName: data.firstName || null }),
       ...(data.lastName !== undefined && { lastName: data.lastName }),
       ...(data.email !== undefined && { email: data.email || null }),
       ...(data.phone !== undefined && { phone: data.phone || null }),

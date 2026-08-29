@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { findDuplicateCustomer } from "@/lib/import/matcher";
+import { generateUniqueOrderNumber } from "@/lib/orderNumber";
 
 const itemSchema = z
   .object({
@@ -14,7 +15,7 @@ const itemSchema = z
   });
 
 const newCustomerSchema = z.object({
-  firstName: z.string().trim().min(1),
+  firstName: z.string().trim().optional(),
   lastName: z.string().trim().min(1),
   email: z.string().trim().email().optional().or(z.literal("")),
   phone: z.string().trim().optional(),
@@ -78,7 +79,7 @@ export async function POST(request: Request) {
     } else {
       const created = await prisma.customer.create({
         data: {
-          firstName: data.customer.firstName,
+          firstName: data.customer.firstName || null,
           lastName: data.customer.lastName,
           email: data.customer.email || null,
           phone: data.customer.phone || null,
@@ -91,8 +92,11 @@ export async function POST(request: Request) {
     }
   }
 
+  const orderNumber = await generateUniqueOrderNumber();
+
   const order = await prisma.order.create({
     data: {
+      orderNumber,
       customerId,
       filialeId: data.filialeId,
       note: data.note || null,
@@ -108,5 +112,5 @@ export async function POST(request: Request) {
     },
   });
 
-  return NextResponse.json({ orderId: order.id }, { status: 201 });
+  return NextResponse.json({ orderId: order.id, orderNumber: order.orderNumber }, { status: 201 });
 }

@@ -18,9 +18,22 @@ describe("rowsToCustomerRows", () => {
   });
 
   it("reports rows missing required fields as errors instead of throwing", () => {
-    const { rows, errors } = rowsToCustomerRows([{ firstName: "", lastName: "Beispiel" }]);
+    const { rows, errors } = rowsToCustomerRows([{ firstName: "Anna", lastName: "" }]);
     expect(rows).toHaveLength(0);
     expect(errors).toHaveLength(1);
+  });
+
+  it("treats a missing Vorname as optional, defaulting it to null", () => {
+    const { rows, errors } = rowsToCustomerRows([{ firstName: "", lastName: "Beispiel" }]);
+    expect(errors).toHaveLength(0);
+    expect(rows[0]).toEqual({
+      firstName: null,
+      lastName: "Beispiel",
+      email: null,
+      phone: null,
+      externalRef: null,
+      notes: null,
+    });
   });
 });
 

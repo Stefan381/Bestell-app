@@ -6,6 +6,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { orderNotificationsInclude, orderStaffInclude } from "@/lib/orderInclude";
 import { toPlainOrder } from "@/lib/apiSerialize";
 import { DEPARTMENTS } from "@/lib/departments";
+import { generateUniqueOrderNumber } from "@/lib/orderNumber";
 
 export async function GET(request: Request) {
   const auth = await requireStaffSession();
@@ -41,6 +42,7 @@ export async function GET(request: Request) {
     where.AND = [
       {
         OR: [
+          { orderNumber: { contains: q } },
           { customer: { firstName: { contains: q, mode: "insensitive" } } },
           { customer: { lastName: { contains: q, mode: "insensitive" } } },
           { items: { some: { article: { name: { contains: q, mode: "insensitive" } } } } },
@@ -95,8 +97,11 @@ export async function POST(request: Request) {
   if (!customer) return NextResponse.json({ error: "Kunde nicht gefunden." }, { status: 404 });
   if (!filiale) return NextResponse.json({ error: "Filiale nicht gefunden." }, { status: 404 });
 
+  const orderNumber = await generateUniqueOrderNumber();
+
   const order = await prisma.order.create({
     data: {
+      orderNumber,
       customerId: data.customerId,
       filialeId: data.filialeId,
       department: data.department,

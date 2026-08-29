@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { CustomerListItem } from "@/lib/types";
+import { customerFullName } from "@/lib/customerName";
 
 const SOURCE_LABEL: Record<string, string> = {
   KASSE: "Kasse",
@@ -134,7 +135,7 @@ export function CustomersList({ initialCustomers }: { initialCustomers: Customer
               <tr key={c.id} className="border-b border-border last:border-0 hover:bg-brand/5">
                 <td className="px-3 py-2">
                   <Link href={`/customers/${c.id}`} className="font-medium text-foreground hover:text-brand">
-                    {c.firstName} {c.lastName}
+                    {customerFullName(c)}
                   </Link>
                 </td>
                 <td className="px-3 py-2 text-foreground/70">{c.email || c.phone || "–"}</td>

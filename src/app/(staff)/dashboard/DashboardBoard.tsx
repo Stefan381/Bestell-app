@@ -8,6 +8,7 @@ import { TableView } from "./TableView";
 import { NewOrderModal } from "./NewOrderModal";
 import type { STATUS_ORDER } from "./OrderCard";
 import { DEPARTMENTS, DEPARTMENT_LABELS } from "@/lib/departments";
+import { customerFullName } from "@/lib/customerName";
 
 interface Filters {
   q: string;
@@ -74,7 +75,7 @@ export function DashboardBoard({
 
   async function handleDelete(orderId: string) {
     const order = orders.find((o) => o.id === orderId);
-    const label = order ? `${order.customer.firstName} ${order.customer.lastName}` : "diese Bestellung";
+    const label = order ? customerFullName(order.customer) : "diese Bestellung";
     if (!confirm(`Bestellung von ${label} wirklich unwiderruflich löschen?`)) return;
 
     const res = await fetch(`/api/orders/${orderId}`, { method: "DELETE" });
@@ -91,7 +92,7 @@ export function DashboardBoard({
         <input
           value={filters.q}
           onChange={(e) => updateFilter({ q: e.target.value })}
-          placeholder="Suche: Kunde, Artikel…"
+          placeholder="Suche: Kunde, Artikel, Vorgangsnr…"
           className="min-w-[180px] flex-1 rounded-lg border border-border px-3 py-1.5 text-sm"
         />
         <select

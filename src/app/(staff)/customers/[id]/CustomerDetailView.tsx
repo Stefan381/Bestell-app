@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { SerializedCustomerDetail } from "@/lib/serialize";
 import { STATUS_LABEL } from "../../dashboard/OrderCard";
+import { customerFullName } from "@/lib/customerName";
 
 const SOURCE_LABEL: Record<string, string> = {
   KASSE: "Kasse",
@@ -25,7 +26,7 @@ function formatDateTime(value: string | Date | null): string {
 export function CustomerDetailView({ customer }: { customer: SerializedCustomerDetail }) {
   const router = useRouter();
   const [form, setForm] = useState({
-    firstName: customer.firstName,
+    firstName: customer.firstName ?? "",
     lastName: customer.lastName,
     email: customer.email ?? "",
     phone: customer.phone ?? "",
@@ -55,7 +56,7 @@ export function CustomerDetailView({ customer }: { customer: SerializedCustomerD
   }
 
   async function handleDelete() {
-    if (!confirm(`${customer.firstName} ${customer.lastName} wirklich löschen (DSGVO-Löschung)?`)) return;
+    if (!confirm(`${customerFullName(customer)} wirklich löschen (DSGVO-Löschung)?`)) return;
     const res = await fetch(`/api/customers/${customer.id}`, { method: "DELETE" });
     if (!res.ok) {
       const data = await res.json().catch(() => ({}));
@@ -68,9 +69,7 @@ export function CustomerDetailView({ customer }: { customer: SerializedCustomerD
   return (
     <div>
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-foreground">
-          {customer.firstName} {customer.lastName}
-        </h1>
+        <h1 className="text-xl font-semibold text-foreground">{customerFullName(customer)}</h1>
         <div className="flex gap-2">
           <a
             href={`/api/customers/${customer.id}/export`}
@@ -98,7 +97,7 @@ export function CustomerDetailView({ customer }: { customer: SerializedCustomerD
           <h2 className="text-sm font-semibold text-foreground">Kontaktdaten</h2>
           <div className="mt-3 grid grid-cols-2 gap-3">
             <label className="flex flex-col gap-1 text-sm">
-              Vorname
+              Vorname (optional)
               <input
                 value={form.firstName}
                 onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}

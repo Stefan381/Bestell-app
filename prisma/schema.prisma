@@ -76,7 +76,7 @@ model User {
 
 model Customer {
   id            String         @id @default(cuid())
-  firstName     String
+  firstName     String?
   lastName      String
   email         String?
   phone         String?
@@ -116,6 +116,9 @@ model Article {
 
 model Order {
   id         String      @id @default(cuid())
+  // Short random reference number staff/customers can read out loud, e.g.
+  // to look an order up by phone - separate from the internal cuid `id`.
+  orderNumber String     @unique
   customerId String
   customer   Customer    @relation(fields: [customerId], references: [id])
   filialeId  String

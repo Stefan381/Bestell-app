@@ -5,6 +5,7 @@ import { requireStaffSession } from "@/lib/auth/apiAuth";
 import { applyColumnMapping } from "@/lib/import/columnMapping";
 import { rowsToCustomerRows } from "@/lib/import/connectors";
 import { findDuplicateCustomer } from "@/lib/import/matcher";
+import { customerFullName } from "@/lib/customerName";
 
 const schema = z.object({
   headers: z.array(z.string()),
@@ -37,8 +38,8 @@ export async function POST(request: Request) {
     .filter((r) => r.match !== null)
     .map((r) => ({
       rowIndex: r.index,
-      newName: `${r.row.firstName} ${r.row.lastName}`,
-      matchedCustomerName: `${r.match!.firstName} ${r.match!.lastName}`,
+      newName: customerFullName({ firstName: r.row.firstName ?? null, lastName: r.row.lastName }),
+      matchedCustomerName: customerFullName(r.match!),
     }));
 
   return NextResponse.json({

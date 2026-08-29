@@ -4,7 +4,7 @@
  * only ever deal with these shapes, never with raw source rows.
  */
 export interface NormalizedCustomerRow {
-  firstName: string;
+  firstName?: string | null;
   lastName: string;
   email?: string | null;
   phone?: string | null;

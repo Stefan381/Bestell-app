@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import type { SerializedArticleDetail } from "@/lib/serialize";
+import { customerFullName } from "@/lib/customerName";
 
 export function ArticleDetailView({ article }: { article: SerializedArticleDetail }) {
   const router = useRouter();
@@ -159,7 +160,7 @@ export function ArticleDetailView({ article }: { article: SerializedArticleDetai
           <ul className="mt-3 space-y-2">
             {article.orderItems.map((item) => (
               <li key={item.id} className="rounded-lg border border-border p-2 text-sm">
-                {item.order.customer.firstName} {item.order.customer.lastName} · ×{item.quantity}
+                {customerFullName(item.order.customer)} · ×{item.quantity}
               </li>
             ))}
             {article.orderItems.length === 0 && (

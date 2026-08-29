@@ -2,6 +2,7 @@
 
 import type { SerializedOrder } from "@/lib/serialize";
 import { STATUS_LABEL } from "./OrderCard";
+import { customerFullName } from "@/lib/customerName";
 
 function formatDateTime(value: string | Date | null): string {
   if (!value) return "–";
@@ -16,9 +17,10 @@ function formatDateTime(value: string | Date | null): string {
 export function TableView({ orders }: { orders: SerializedOrder[] }) {
   return (
     <div className="overflow-x-auto rounded-xl border border-border bg-surface">
-      <table className="w-full min-w-[900px] text-left text-sm">
+      <table className="w-full min-w-[1000px] text-left text-sm">
         <thead className="border-b border-border bg-background text-xs uppercase text-foreground/50">
           <tr>
+            <th className="px-3 py-2">Vorgangsnr.</th>
             <th className="px-3 py-2">Kunde</th>
             <th className="px-3 py-2">Artikel</th>
             <th className="px-3 py-2">Filiale</th>
@@ -31,9 +33,8 @@ export function TableView({ orders }: { orders: SerializedOrder[] }) {
         <tbody>
           {orders.map((order) => (
             <tr key={order.id} className="border-b border-border last:border-0">
-              <td className="px-3 py-2 font-medium text-foreground">
-                {order.customer.firstName} {order.customer.lastName}
-              </td>
+              <td className="px-3 py-2 font-mono text-xs text-foreground/70">{order.orderNumber}</td>
+              <td className="px-3 py-2 font-medium text-foreground">{customerFullName(order.customer)}</td>
               <td className="px-3 py-2 text-foreground/70">
                 {order.items
                   .map((item) => `${item.article?.name ?? item.freeTextWish ?? "Artikel"} (×${item.quantity})`)
@@ -61,7 +62,7 @@ export function TableView({ orders }: { orders: SerializedOrder[] }) {
           ))}
           {orders.length === 0 && (
             <tr>
-              <td colSpan={7} className="px-3 py-6 text-center text-foreground/40">
+              <td colSpan={8} className="px-3 py-6 text-center text-foreground/40">
                 Keine Bestellungen gefunden.
               </td>
             </tr>

@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import type { SerializedOrder } from "@/lib/serialize";
 import { DEPARTMENTS, DEPARTMENT_LABELS, type Department } from "@/lib/departments";
+import { customerFullName, customerFullNameReversed } from "@/lib/customerName";
 
 const STATUS_ORDER = ["OFFEN", "BESTELLT", "GELIEFERT"] as const;
 type NotifyChannel = "EMAIL" | "WHATSAPP";
@@ -31,6 +32,12 @@ function suppliersSummary(order: SerializedOrder): string {
     new Set(order.items.map((item) => item.article?.supplier).filter((s): s is string => Boolean(s)))
   );
   return suppliers.length > 0 ? suppliers.join(", ") : "–";
+}
+
+/** Article names shown on the compact tile so staff can tell orders apart
+ * without expanding every card. */
+function articleNamesSummary(order: SerializedOrder): string {
+  return order.items.map((item) => item.article?.name ?? item.freeTextWish ?? "Artikel").join(", ");
 }
 
 /** Opens the customer's default mail app / WhatsApp with the rendered
@@ -95,7 +102,7 @@ interface EditForm {
 
 function buildEditForm(order: SerializedOrder): EditForm {
   return {
-    firstName: order.customer.firstName,
+    firstName: order.customer.firstName ?? "",
     lastName: order.customer.lastName,
     email: order.customer.email ?? "",
     phone: order.customer.phone ?? "",
@@ -204,13 +211,13 @@ export function OrderCard({
     setSaveError(null);
     try {
       const customerChanged =
-        form.firstName !== order.customer.firstName ||
+        form.firstName !== (order.customer.firstName ?? "") ||
         form.lastName !== order.customer.lastName ||
         form.email !== (order.customer.email ?? "") ||
         form.phone !== (order.customer.phone ?? "");
       if (customerChanged) {
-        if (!form.firstName.trim() || !form.lastName.trim()) {
-          throw new Error("Vor- und Nachname des Kunden dürfen nicht leer sein.");
+        if (!form.lastName.trim()) {
+          throw new Error("Nachname des Kunden darf nicht leer sein.");
         }
         const res = await fetch(`/api/customers/${order.customer.id}`, {
           method: "PATCH",
@@ -298,9 +305,8 @@ export function OrderCard({
     >
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium text-foreground">
-            {order.customer.lastName}, {order.customer.firstName}
-          </p>
+          <p className="truncate text-sm font-medium text-foreground">{customerFullNameReversed(order.customer)}</p>
+          <p className="truncate text-xs text-foreground/70">{articleNamesSummary(order)}</p>
           <p className="truncate text-xs text-foreground/60">Lieferant: {suppliersSummary(order)}</p>
         </div>
         <div className="flex shrink-0 items-center gap-1.5">
@@ -324,9 +330,7 @@ export function OrderCard({
         >
           <div>
             <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground/40">Kunde</h4>
-            <p className="mt-1 font-medium text-foreground">
-              {order.customer.firstName} {order.customer.lastName}
-            </p>
+            <p className="mt-1 font-medium text-foreground">{customerFullName(order.customer)}</p>
             <p className="text-foreground/60">E-Mail: {order.customer.email || "–"}</p>
             <p className="text-foreground/60">Telefon: {order.customer.phone || "–"}</p>
             <p className="text-foreground/60">Herkunft: {SOURCE_LABEL[order.customer.source] ?? order.customer.source}</p>
@@ -336,6 +340,9 @@ export function OrderCard({
 
           <div>
             <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground/40">Bestellung</h4>
+            <p className="text-foreground/60">
+              Vorgangsnr.: <span className="font-mono">{order.orderNumber}</span>
+            </p>
             <p className="text-foreground/60">Filiale: {order.filiale.name}</p>
             <p className="text-foreground/60">
               Abteilung: {order.department ? DEPARTMENT_LABELS[order.department as Department] : "–"}
@@ -399,6 +406,12 @@ export function OrderCard({
                 >
                   {notifying === "WHATSAPP" ? "Öffnet…" : "💬 Per WhatsApp informieren"}
                 </button>
+                <button
+                  onClick={() => window.open(`/orders/${order.id}/receipt`, "_blank")}
+                  className="rounded-lg border border-border px-2 py-1 text-xs font-medium text-foreground/70 transition hover:border-brand hover:text-brand"
+                >
+                  🖨 Liefer-Quittung drucken
+                </button>
               </div>
               {lastEmailNotification && (
                 <p className="text-xs text-green-700">
@@ -451,7 +464,7 @@ export function OrderCard({
             <h4 className="text-xs font-semibold uppercase tracking-wide text-foreground/40">Kunde</h4>
             <div className="mt-1 grid grid-cols-2 gap-2">
               <input
-                placeholder="Vorname"
+                placeholder="Vorname (optional)"
                 value={form.firstName}
                 onChange={(e) => setForm((f) => f && { ...f, firstName: e.target.value })}
                 className="rounded-lg border border-border px-2 py-1.5 text-sm"

@@ -125,6 +125,7 @@ async function main() {
     update: {},
     create: {
       id: "demo-order-1",
+      orderNumber: "100001",
       customerId: customer1.id,
       filialeId: filiale1.id,
       status: "OFFEN",
@@ -141,6 +142,7 @@ async function main() {
     update: {},
     create: {
       id: "demo-order-2",
+      orderNumber: "100002",
       customerId: customer2.id,
       filialeId: filiale2.id,
       status: "BESTELLT",
