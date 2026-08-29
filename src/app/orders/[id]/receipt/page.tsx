@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import QRCode from "qrcode";
 import { getSession } from "@/lib/auth/session";
 import { prisma } from "@/lib/prisma";
 import { orderStaffInclude } from "@/lib/orderInclude";
@@ -6,14 +7,21 @@ import { customerFullName } from "@/lib/customerName";
 import { DEPARTMENT_LABELS, type Department } from "@/lib/departments";
 import { PrintButton } from "./PrintButton";
 
+// Google review link for City Kauf GmbH, encoded as a QR code below.
+const REVIEW_URL = "https://g.page/r/Ce8ZS0ybjkgTEBM/review";
+
 function formatDateTime(value: Date | null): string {
   if (!value) return "–";
+  // The server (Vercel) runs in UTC, not the shop's local time - printed
+  // receipts need to always show Berlin time regardless of where the app
+  // happens to be hosted.
   return new Date(value).toLocaleString("de-DE", {
     day: "2-digit",
     month: "2-digit",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
+    timeZone: "Europe/Berlin",
   });
 }
 
@@ -39,6 +47,8 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
     (sum, item) => sum + (item.article ? Number(item.article.price) * item.quantity : 0),
     0
   );
+
+  const reviewQrSvg = await QRCode.toString(REVIEW_URL, { type: "svg", margin: 0, width: 120 });
 
   return (
     <div className="mx-auto max-w-md p-8 text-sm text-foreground print:p-0">
@@ -89,7 +99,14 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
 
       {order.note && <p className="mt-4 text-xs text-foreground/60">Notiz: {order.note}</p>}
 
-      <p className="mt-8 text-center text-xs text-foreground/40">Vielen Dank für Ihren Einkauf!</p>
+      <p className="mt-8 text-center text-xs text-foreground/60">
+        Danke für Deine Bestellung. Wenn Du mit uns zufrieden bist, dann würden wir uns über Deine 5 Sterne
+        Bewertung freuen.
+      </p>
+      <div
+        className="mx-auto mt-3 h-[120px] w-[120px]"
+        dangerouslySetInnerHTML={{ __html: reviewQrSvg }}
+      />
     </div>
   );
 }
