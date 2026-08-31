@@ -7,8 +7,8 @@ import { buildOrderWhere } from "@/lib/orderFilters";
 import { DEPARTMENT_LABELS, type Department } from "@/lib/departments";
 
 // Excel row heights are stored in points, not pixels (96px/72pt = 4/3) -
-// this is what actually produces a 40px-tall row when opened.
-const ROW_HEIGHT_PX = 40;
+// this is what actually produces an 80px-tall row when opened.
+const ROW_HEIGHT_PX = 80;
 const ROW_HEIGHT_PT = ROW_HEIGHT_PX * 0.75;
 
 const STATUS_ORDER = ["OFFEN", "BESTELLT", "GELIEFERT"] as const;
