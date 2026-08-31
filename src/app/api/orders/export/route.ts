@@ -69,13 +69,15 @@ export async function GET(request: Request) {
   workbook.created = new Date();
 
   for (const status of STATUS_ORDER) {
-    const sheet = workbook.addWorksheet(STATUS_SHEET_NAME[status]);
+    const sheet = workbook.addWorksheet(STATUS_SHEET_NAME[status], {
+      properties: { defaultRowHeight: 15 },
+    });
     sheet.columns = COLUMNS.map(({ header, key, width }) => ({ header, key, width }));
 
     const ordersForStatus = orders.filter((o) => o.status === status);
     for (const order of ordersForStatus) {
       for (const item of order.items) {
-        sheet.addRow({
+        const row = sheet.addRow({
           orderNumber: order.orderNumber,
           lastName: order.customer.lastName,
           firstName: order.customer.firstName ?? "",
@@ -95,10 +97,12 @@ export async function GET(request: Request) {
           deliveredAt: formatDateTime(order.deliveredAt),
           deliveredBy: order.deliveredByUser?.name ?? "",
         });
+        row.height = 15;
       }
     }
 
     sheet.getRow(1).font = { bold: true };
+    sheet.getRow(1).height = 15;
     if (sheet.rowCount > 0) {
       sheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: COLUMNS.length } };
     }
