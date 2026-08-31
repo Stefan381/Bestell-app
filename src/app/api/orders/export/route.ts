@@ -6,6 +6,11 @@ import { orderStaffInclude } from "@/lib/orderInclude";
 import { buildOrderWhere } from "@/lib/orderFilters";
 import { DEPARTMENT_LABELS, type Department } from "@/lib/departments";
 
+// Excel row heights are stored in points, not pixels (96px/72pt = 4/3) -
+// this is what actually produces a 40px-tall row when opened.
+const ROW_HEIGHT_PX = 40;
+const ROW_HEIGHT_PT = ROW_HEIGHT_PX * 0.75;
+
 const STATUS_ORDER = ["OFFEN", "BESTELLT", "GELIEFERT"] as const;
 const STATUS_SHEET_NAME: Record<(typeof STATUS_ORDER)[number], string> = {
   OFFEN: "Offen",
@@ -70,7 +75,7 @@ export async function GET(request: Request) {
 
   for (const status of STATUS_ORDER) {
     const sheet = workbook.addWorksheet(STATUS_SHEET_NAME[status], {
-      properties: { defaultRowHeight: 15 },
+      properties: { defaultRowHeight: ROW_HEIGHT_PT },
     });
     sheet.columns = COLUMNS.map(({ header, key, width }) => ({ header, key, width }));
 
@@ -97,12 +102,12 @@ export async function GET(request: Request) {
           deliveredAt: formatDateTime(order.deliveredAt),
           deliveredBy: order.deliveredByUser?.name ?? "",
         });
-        row.height = 15;
+        row.height = ROW_HEIGHT_PT;
       }
     }
 
     sheet.getRow(1).font = { bold: true };
-    sheet.getRow(1).height = 15;
+    sheet.getRow(1).height = ROW_HEIGHT_PT;
     if (sheet.rowCount > 0) {
       sheet.autoFilter = { from: { row: 1, column: 1 }, to: { row: 1, column: COLUMNS.length } };
     }
