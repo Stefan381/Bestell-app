@@ -2,55 +2,18 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { requireStaffSession } from "@/lib/auth/apiAuth";
-import type { Prisma } from "@/generated/prisma/client";
 import { orderNotificationsInclude, orderStaffInclude } from "@/lib/orderInclude";
 import { toPlainOrder } from "@/lib/apiSerialize";
 import { DEPARTMENTS } from "@/lib/departments";
 import { generateUniqueOrderNumber } from "@/lib/orderNumber";
+import { buildOrderWhere } from "@/lib/orderFilters";
 
 export async function GET(request: Request) {
   const auth = await requireStaffSession();
   if (!auth.session) return auth.response;
 
   const { searchParams } = new URL(request.url);
-  const status = searchParams.get("status");
-  const filialeId = searchParams.get("filialeId");
-  const department = searchParams.get("department");
-  const employeeId = searchParams.get("employeeId");
-  const from = searchParams.get("from");
-  const to = searchParams.get("to");
-  const q = searchParams.get("q")?.trim();
-
-  const where: Prisma.OrderWhereInput = {};
-  if (status) where.status = status as Prisma.OrderWhereInput["status"];
-  if (filialeId) where.filialeId = filialeId;
-  if (department) where.department = department as Prisma.OrderWhereInput["department"];
-  if (employeeId) {
-    where.OR = [
-      { createdByUserId: employeeId },
-      { orderedByUserId: employeeId },
-      { deliveredByUserId: employeeId },
-    ];
-  }
-  if (from || to) {
-    where.createdAt = {
-      ...(from && { gte: new Date(from) }),
-      ...(to && { lte: new Date(to) }),
-    };
-  }
-  if (q) {
-    where.AND = [
-      {
-        OR: [
-          { orderNumber: { contains: q } },
-          { customer: { firstName: { contains: q, mode: "insensitive" } } },
-          { customer: { lastName: { contains: q, mode: "insensitive" } } },
-          { items: { some: { article: { name: { contains: q, mode: "insensitive" } } } } },
-          { items: { some: { freeTextWish: { contains: q, mode: "insensitive" } } } },
-        ],
-      },
-    ];
-  }
+  const where = buildOrderWhere(searchParams);
 
   const orders = await prisma.order.findMany({
     where,

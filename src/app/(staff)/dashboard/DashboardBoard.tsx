@@ -21,6 +21,17 @@ interface Filters {
 
 const EMPTY_FILTERS: Filters = { q: "", filialeId: "", department: "", employeeId: "", from: "", to: "" };
 
+function buildFilterParams(filters: Filters): URLSearchParams {
+  const params = new URLSearchParams();
+  if (filters.q) params.set("q", filters.q);
+  if (filters.filialeId) params.set("filialeId", filters.filialeId);
+  if (filters.department) params.set("department", filters.department);
+  if (filters.employeeId) params.set("employeeId", filters.employeeId);
+  if (filters.from) params.set("from", filters.from);
+  if (filters.to) params.set("to", filters.to);
+  return params;
+}
+
 export function DashboardBoard({
   initialOrders,
   filialen,
@@ -38,13 +49,7 @@ export function DashboardBoard({
 
   const refetch = useCallback(async (nextFilters: Filters) => {
     setLoading(true);
-    const params = new URLSearchParams();
-    if (nextFilters.q) params.set("q", nextFilters.q);
-    if (nextFilters.filialeId) params.set("filialeId", nextFilters.filialeId);
-    if (nextFilters.department) params.set("department", nextFilters.department);
-    if (nextFilters.employeeId) params.set("employeeId", nextFilters.employeeId);
-    if (nextFilters.from) params.set("from", nextFilters.from);
-    if (nextFilters.to) params.set("to", nextFilters.to);
+    const params = buildFilterParams(nextFilters);
 
     const res = await fetch(`/api/orders?${params.toString()}`);
     const data = await res.json();
@@ -160,6 +165,12 @@ export function DashboardBoard({
               Tabelle
             </button>
           </div>
+          <a
+            href={`/api/orders/export?${buildFilterParams(filters).toString()}`}
+            className="rounded-lg border border-border px-3 py-1.5 text-sm font-medium text-foreground/70 hover:border-brand hover:text-brand"
+          >
+            Excel exportieren
+          </a>
           <button
             onClick={() => setShowNewOrder(true)}
             className="rounded-lg bg-brand px-3 py-1.5 text-sm font-medium text-white hover:bg-brand-dark"
