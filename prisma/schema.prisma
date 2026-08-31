@@ -124,8 +124,8 @@ model Order {
   filialeId  String
   filiale    Filiale     @relation(fields: [filialeId], references: [id])
   status     OrderStatus @default(OFFEN)
-  // Nullable: only set by the staff "Neue Bestellung" form. Kiosk orders
-  // don't ask the customer for this, so stay null there.
+  // Nullable: set by both the staff "Neue Bestellung" form and the kiosk
+  // flow, but stays optional at the schema level for robustness.
   department Department?
   note       String?
 

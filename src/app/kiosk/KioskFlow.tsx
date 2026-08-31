@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { customerFullName } from "@/lib/customerName";
+import { DEPARTMENTS, DEPARTMENT_LABELS, type Department } from "@/lib/departments";
 
-type Step = "contact" | "identify-confirm" | "items" | "review" | "done";
+type Step = "contact" | "identify-confirm" | "department" | "items" | "review" | "done";
 
 interface ArticleResult {
   id: string;
@@ -37,6 +38,7 @@ export function KioskFlow({ filialeId, filialeName }: { filialeId: string; filia
   } | null>(null);
   const [contactError, setContactError] = useState<string | null>(null);
   const [checking, setChecking] = useState(false);
+  const [department, setDepartment] = useState<Department | null>(null);
 
   const [articleQuery, setArticleQuery] = useState("");
   const [articleResultsRaw, setArticleResults] = useState<ArticleResult[]>([]);
@@ -71,6 +73,7 @@ export function KioskFlow({ filialeId, filialeName }: { filialeId: string; filia
     setContact({ firstName: "", lastName: "", email: "", phone: "" });
     setIdentifiedCustomer(null);
     setContactError(null);
+    setDepartment(null);
     setCart([]);
     setNote("");
     setMarketingConsent(false);
@@ -102,7 +105,7 @@ export function KioskFlow({ filialeId, filialeName }: { filialeId: string; filia
       setIdentifiedCustomer(data.customer);
       setStep("identify-confirm");
     } else {
-      setStep("items");
+      setStep("department");
     }
   }
 
@@ -149,6 +152,7 @@ export function KioskFlow({ filialeId, filialeName }: { filialeId: string; filia
               email: contact.email || undefined,
               phone: contact.phone || undefined,
             },
+        department: department ?? undefined,
         gdprMarketingConsent: marketingConsent,
         note: note || undefined,
         items: cart.map((item) => ({
@@ -216,13 +220,13 @@ export function KioskFlow({ filialeId, filialeName }: { filialeId: string; filia
               Sind Sie {customerFullName(identifiedCustomer)}?
             </h2>
             <p className="text-foreground/60">Wir haben Sie bereits in unserem System gefunden.</p>
-            <button onClick={() => setStep("items")} className={BUTTON_PRIMARY}>
+            <button onClick={() => setStep("department")} className={BUTTON_PRIMARY}>
               Ja, das bin ich
             </button>
             <button
               onClick={() => {
                 setIdentifiedCustomer(null);
-                setStep("items");
+                setStep("department");
               }}
               className={BUTTON_SECONDARY}
             >
@@ -231,13 +235,36 @@ export function KioskFlow({ filialeId, filialeName }: { filialeId: string; filia
           </div>
         )}
 
+        {step === "department" && (
+          <div className="flex flex-col gap-4">
+            <h2 className="text-2xl font-bold text-foreground">In welcher Abteilung möchten Sie bestellen?</h2>
+            <div className="flex flex-col gap-3">
+              {DEPARTMENTS.map((d) => (
+                <button
+                  key={d}
+                  onClick={() => {
+                    setDepartment(d);
+                    setStep("items");
+                  }}
+                  className={BUTTON_SECONDARY}
+                >
+                  {DEPARTMENT_LABELS[d]}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         {step === "items" && (
           <div className="flex flex-col gap-4">
             <h2 className="text-2xl font-bold text-foreground">Was möchten Sie bestellen?</h2>
+            <p className="text-foreground/60">
+              Sie können beliebig viele Artikel zu Ihrer Bestellung hinzufügen.
+            </p>
             <input
               value={articleQuery}
               onChange={(e) => setArticleQuery(e.target.value)}
-              placeholder="Artikel suchen…"
+              placeholder="Artikel, Artikelnummer oder EAN suchen…"
               className={INPUT_CLASS}
             />
             {articleResults.length > 0 && (
@@ -294,6 +321,12 @@ export function KioskFlow({ filialeId, filialeName }: { filialeId: string; filia
                   </li>
                 ))}
               </ul>
+            )}
+
+            {cart.length > 0 && (
+              <p className="text-center font-medium text-brand">
+                ✓ Zum Warenkorb hinzugefügt. Weitere Artikel gewünscht? Einfach oben weitersuchen.
+              </p>
             )}
 
             <button

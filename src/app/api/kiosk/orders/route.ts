@@ -3,6 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { findDuplicateCustomer } from "@/lib/import/matcher";
 import { generateUniqueOrderNumber } from "@/lib/orderNumber";
+import { DEPARTMENTS } from "@/lib/departments";
 
 const itemSchema = z
   .object({
@@ -25,6 +26,7 @@ const schema = z.object({
   filialeId: z.string(),
   identifiedCustomerId: z.string().optional(),
   customer: newCustomerSchema.optional(),
+  department: z.enum(DEPARTMENTS).optional(),
   gdprMarketingConsent: z.boolean(),
   note: z.string().trim().optional(),
   items: z.array(itemSchema).min(1),
@@ -99,6 +101,7 @@ export async function POST(request: Request) {
       orderNumber,
       customerId,
       filialeId: data.filialeId,
+      department: data.department ?? null,
       note: data.note || null,
       status: "OFFEN",
       createdByUserId: null,
