@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { customerFullName } from "@/lib/customerName";
 import { DEPARTMENTS, DEPARTMENT_LABELS, type Department } from "@/lib/departments";
 
-type Step = "contact" | "identify-confirm" | "department" | "items" | "review" | "done";
+type Step = "contact" | "identify-confirm" | "department" | "items" | "add-more" | "review" | "done";
 
 interface ArticleResult {
   id: string;
@@ -30,6 +30,11 @@ const BUTTON_SECONDARY =
 
 export function KioskFlow({ filialeId, filialeName }: { filialeId: string; filialeName: string }) {
   const [step, setStep] = useState<Step>("contact");
+  // Stack of previously visited steps, so a single "Zurück" button can undo
+  // whatever forward navigation (goToStep) happened, including the
+  // identify-confirm branch and the items<->add-more loop, without hardcoding
+  // a fixed step order.
+  const [history, setHistory] = useState<Step[]>([]);
   const [contact, setContact] = useState({ firstName: "", lastName: "", email: "", phone: "" });
   const [identifiedCustomer, setIdentifiedCustomer] = useState<{
     id: string;
@@ -68,8 +73,22 @@ export function KioskFlow({ filialeId, filialeName }: { filialeId: string; filia
     return () => clearTimeout(timeout);
   }, [step]);
 
+  function goToStep(next: Step) {
+    setHistory((h) => [...h, step]);
+    setStep(next);
+  }
+
+  function goBack() {
+    setHistory((h) => {
+      if (h.length === 0) return h;
+      setStep(h[h.length - 1]);
+      return h.slice(0, -1);
+    });
+  }
+
   function resetAll() {
     setStep("contact");
+    setHistory([]);
     setContact({ firstName: "", lastName: "", email: "", phone: "" });
     setIdentifiedCustomer(null);
     setContactError(null);
@@ -103,9 +122,9 @@ export function KioskFlow({ filialeId, filialeName }: { filialeId: string; filia
 
     if (data.found) {
       setIdentifiedCustomer(data.customer);
-      setStep("identify-confirm");
+      goToStep("identify-confirm");
     } else {
-      setStep("department");
+      goToStep("department");
     }
   }
 
@@ -119,12 +138,14 @@ export function KioskFlow({ filialeId, filialeName }: { filialeId: string; filia
     });
     setArticleQuery("");
     setArticleResults([]);
+    goToStep("add-more");
   }
 
   function addFreeTextWish() {
     if (!freeTextWish.trim()) return;
     setCart((prev) => [...prev, { freeTextWish: freeTextWish.trim(), name: freeTextWish.trim(), quantity: 1 }]);
     setFreeTextWish("");
+    goToStep("add-more");
   }
 
   function updateQuantity(index: number, quantity: number) {
@@ -171,6 +192,7 @@ export function KioskFlow({ filialeId, filialeName }: { filialeId: string; filia
     const data = await res.json().catch(() => ({}));
     setDoneOrderNumber(data.orderNumber ?? null);
     setStep("done");
+    setHistory([]);
   }
 
   return (
@@ -180,6 +202,19 @@ export function KioskFlow({ filialeId, filialeName }: { filialeId: string; filia
       </header>
 
       <div className="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-4 py-8">
+        {history.length > 0 && step !== "done" && (
+          <button
+            onClick={goBack}
+            aria-label="Zurück"
+            className="mb-4 flex items-center gap-1 self-start text-foreground/60 transition hover:text-brand"
+          >
+            <span aria-hidden="true" className="text-2xl leading-none">
+              ←
+            </span>
+            <span className="text-sm font-medium">Zurück</span>
+          </button>
+        )}
+
         {step === "contact" && (
           <div className="flex flex-col gap-4">
             <h2 className="text-2xl font-bold text-foreground">Willkommen! Wer sind Sie?</h2>
@@ -220,13 +255,13 @@ export function KioskFlow({ filialeId, filialeName }: { filialeId: string; filia
               Sind Sie {customerFullName(identifiedCustomer)}?
             </h2>
             <p className="text-foreground/60">Wir haben Sie bereits in unserem System gefunden.</p>
-            <button onClick={() => setStep("department")} className={BUTTON_PRIMARY}>
+            <button onClick={() => goToStep("department")} className={BUTTON_PRIMARY}>
               Ja, das bin ich
             </button>
             <button
               onClick={() => {
                 setIdentifiedCustomer(null);
-                setStep("department");
+                goToStep("department");
               }}
               className={BUTTON_SECONDARY}
             >
@@ -244,7 +279,7 @@ export function KioskFlow({ filialeId, filialeName }: { filialeId: string; filia
                   key={d}
                   onClick={() => {
                     setDepartment(d);
-                    setStep("items");
+                    goToStep("items");
                   }}
                   className={BUTTON_SECONDARY}
                 >
@@ -323,18 +358,37 @@ export function KioskFlow({ filialeId, filialeName }: { filialeId: string; filia
               </ul>
             )}
 
-            {cart.length > 0 && (
-              <p className="text-center font-medium text-brand">
-                ✓ Zum Warenkorb hinzugefügt. Weitere Artikel gewünscht? Einfach oben weitersuchen.
-              </p>
-            )}
-
             <button
-              onClick={() => setStep("review")}
+              onClick={() => goToStep("review")}
               disabled={cart.length === 0}
               className={BUTTON_PRIMARY}
             >
               Weiter ({cart.length} Artikel)
+            </button>
+          </div>
+        )}
+
+        {step === "add-more" && (
+          <div className="flex flex-col gap-4 text-center">
+            <h2 className="text-2xl font-bold text-foreground">Möchten Sie weitere Artikel hinzufügen?</h2>
+            {cart.length > 0 && (
+              <ul className="flex flex-col gap-2 text-left">
+                {cart.map((item, i) => (
+                  <li
+                    key={i}
+                    className="flex items-center justify-between gap-2 rounded-xl border-2 border-border px-4 py-2"
+                  >
+                    <span>{item.name}</span>
+                    <span className="text-foreground/50">×{item.quantity}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <button onClick={() => goToStep("items")} className={BUTTON_PRIMARY}>
+              Ja, weiteren Artikel hinzufügen
+            </button>
+            <button onClick={() => goToStep("review")} className={BUTTON_SECONDARY}>
+              Nein, weiter zur Bestellung
             </button>
           </div>
         )}
